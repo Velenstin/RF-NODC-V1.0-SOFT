@@ -91,9 +91,9 @@ _FRAH_0#sh	EQU            	(FRAH - 0X6080) % 0X40 + 0xC0		; Bank 0
 _FRAL_0#sh	EQU            	(FRAL - 0X6080) % 0X40 + 0xC0		; Bank 0
 
 SECTION1D__ae_projects_Compiler_Library_Source_stdlib_stdlib_stdlib_97_stdlib_c_STATIC	UNINTIAL       	0		; Bank 0
-	ORG            	0X9F		; Bank 0
+	ORG            	0XA1		; Bank 0
 _randx_0	RSEG           	0X4		; Bank 0
-	ORG            	0X97		; Bank 0
+	ORG            	0X9B		; Bank 0
 _randf_0	RSEG           	0X1		; Bank 0
 	END
 

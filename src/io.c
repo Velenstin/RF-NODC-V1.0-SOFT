@@ -30,7 +30,7 @@ void GPIOInit(void)
 	ANSL = 0xFF;        //选择对应端口为数字IO功能
 	ANSH = 0xFF;        //选择对应端口为数字IO功能
 
-    PAT = 0x0B;         //PA2 4 5 6 7输出，PA0 1 3输入  PINT0、RX0、MRST
+    PAT = 0x8B;         //PA2 4 5 6 输出，PA0 1 3 7输入  PINT0、RX0、MRST
     PBT = 0x48;			//PB0 1 2 4 5 7输出，PB3 6输入  IRQ、MISO
     PCT = 0x00;			//PC0 1输出
 

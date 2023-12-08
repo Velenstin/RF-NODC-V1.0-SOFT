@@ -17,16 +17,17 @@
 #include "ram.h"
 #include "spi.h"
 
-#define CLRWDT()   {__Asm CWDT;}        //宏定义清狗指令
 
 uint16_t	_ack_count;
-sbit		_hw2000b_irq_request;	//射频中断标志
+sbit		hw2000b_irq_request;	//射频中断标志
 sbit		rx_ok;
 
 uint8_t sleep_flag = 0;
 uint8_t RX_OK_flag = 0;
 
 uint8_t rxbuf[40];
+uint8_t data_rf[30];	
+
 
 uint8_t timer_cnt;
 
@@ -248,48 +249,47 @@ void sleep(void)
 
 	timer_cnt = 250;
 
-	RX0EN = 1;			//使能串口接收
+	RX0EN = 1;				//使能串口接收
 }
 
 
 void WDT_Init(void)
 {
-    WDTC = 0x16;         //分频比1:128，使能WDT预分频器，看门狗溢出时间t=256*128/32000=1.024s
+    WDTC = 0x16;			//分频比1:128，使能WDT预分频器，看门狗溢出时间t=256*128/32000=1.024s
     PWEN &= 0xFD;
-    PWEN |= 0<<1;		//禁止IDLE状态下计数
+    PWEN |= 0<<1;			//禁止IDLE状态下计数
 }
 
 void UART_Init(void)
 {
-    RX0LEN = 0;     //8位数据接收格式
-    TX0LEN = 0;     //8位数据发送格式
-	//BJT0EN = 1;		//波特率去抖使能
-    //BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*BRRDIV))
-    //BR0R = 0xD0;    //波特率整数部分=16MHz/(64*1200bps)=208.3333
-	//BR0FRA = 0x05;	//波特率小数部分=16*0.3333 ≈ 5
+    RX0LEN = 0;				//8位数据接收格式
+    TX0LEN = 0;				//8位数据发送格式
+	BJT0EN = 1;				//波特率去抖使能
+    BRGH0 = 0;				//波特率低速模式：波特率=Fosc/(64*BRRDIV))
+    BR0R = 0xD0;			//波特率整数部分=16MHz/(64*1200bps)=208.3333
+	BR0FRA = 0x05;			//波特率小数部分=16*0.3333 ≈ 5
 
     //BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*(BRR<7:0>+1))
-    //BR0R = 0x19;    //波特率=16MHz/(64*(25+1))≈9600bps
+    //BR0R = 0x33;    //波特率=16MHz/(64*(51+1))≈4800bps
 
-    BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*(BRR<7:0>+1))
-    BR0R = 0x33;    //波特率=16MHz/(64*(51+1))≈4800bps
+	RX0TXEN = 1;			//串口管脚交互，RX0=0 ,TX0=1
 
-	RX0TXEN = 1;		//串口管脚交互，RX0=0 ,TX0=1
+	RX0IE = 1;				//接收中断
+	RX0EN = 1;				//打开串口接收
 
-	RX0IE = 1;			//接收中断
-	//RX0EN = 1;          //打开串口接收
+	TX0EN = 1;				//打开串口发送
 }
 
 void TIME_Init(void)
 {
-    T8NC = 0x0E;         //定时器模式，预分频1:(Fosc/2)/128
-    T8N = 131;           //赋计数器初值   2ms
-    T8NIE = 1;           //打开定时器溢出中断
-    T8NIF = 0;           //清溢出标志位
+    T8NC = 0x0E;			//定时器模式，预分频1:(Fosc/2)/128
+    T8N = 131;				//赋计数器初值   2ms
+    T8NIE = 1;				//打开定时器溢出中断
+    T8NIF = 0;				//清溢出标志位
 
-    T8NEN = 1;           //使能T8N
+    T8NEN = 1;				//使能T8N
 
-	timer_cnt = 250;	 //
+	timer_cnt = 250;		//
 }
 
 
@@ -305,6 +305,10 @@ void TIME_Init(void)
 **************************************************************************/
 void main(void) 
 {
+	uint8_t i;
+	uint8_t data_buf,data_len;
+	uint16_t reg;
+
     GPIOInit();										//初始化GPIO
 	WDT_Init();										//初始化看门狗
 	UART_Init();									//初始化串口
@@ -312,40 +316,64 @@ void main(void)
 
 	rxbuf[0] = 0;									//清串口计数值
 	RX_OK_flag = 0;									//清串口接收完成标志
-	sleep_flag = 1;									//上电休眠
 
 	spi_init();										//初始化SPI端口
 
 	hw2000b_port_init();							//初始化射频端口
 	hw2000b_init_250k();							//初始化射频参数
-	hw2000b_power_down();							//关闭射频模块
 
 	GIE = 1;										//全局中断使能
 
 	while(1) 
 	{
-		if(sleep_flag)							//睡眠标志位判断
+		if (RX_OK_flag)											//串口接收完成标志位判断
 		{
-			sleep();							//进入睡眠函数
-			sleep_flag = 0;						//清睡眠标志位
+			RX_OK_flag = 0;										//清接收完成标志位
+			RX0EN = 0;											//关闭串口接收
+			hw2000b_tx_data(rxbuf, rxbuf[0] + 1);				//发送串口数据
+			RX0EN = 1;											//打开串口接收
+			rxbuf[0] = 0;										//清除计数值
+		}
+		else
+		{
+			hw2000b_irq_request = 0;							//清中断标志位
+			hw2000b_write_reg(0x36, 0x0080);					//FIFO0 enable
+			hw2000b_write_reg(0x37, 0x0000);					//FIFO1 disable
+			hw2000b_write_reg(0x21, 0x0080);					//RX enable 
+			delay_us(5);
+
+			while ((!hw2000b_irq_request) && (!RX_OK_flag))
+			{
+				CLRWDT();										//清看门狗
+				delay_us(5);
+			}
+
+			if (hw2000b_irq_request)
+			{
+				reg = hw2000b_read_reg(0x36);					//读取状态寄存器
+				if ((reg & 0x2000) == 0)
+				{     
+					hw2000b_read_fifo(0x32, data_rf, 1);		//读取接收数据长度值
+					data_len = data_rf[0];
+					hw2000b_read_fifo(0x32, data_rf, data_len); //读取数据
+
+					for (i = 0; i<data_len; i++)				//根据数据长度循环发送
+					{
+						while (!TRMT0);
+						TX0B = data_rf[i];						//串口发送数据
+					}
+					while (!TRMT0);								//等待发送完成
+
+				}
+			}
+
+			hw2000b_write_reg(0x3D, 0x0008);					//clear int0
+			hw2000b_write_reg(0x21, 0x0000);					//TX/RX disable
+			hw2000b_write_reg(0x23, 0x431B);					//复位RF状态
+			hw2000b_write_reg(0x23, 0x031B);
 		}
 
-		if (RX_OK_flag)							//串口接收完成标志位判断
-		{
-			RX_OK_flag = 0;						//清接收完成标志位
-			CLRWDT();
-
-			hw2000b_power_on();					//打开射频模块
-			hw2000b_tx_data(rxbuf, rxbuf[0] + 1);	//发送串口数据
-			hw2000b_power_down();				//关闭射频模块
-			CLRWDT();
-
-			rxbuf[0] = 0;						//清除计数值
-
-			sleep_flag = 1;						//置睡眠标志位
-		}
-
-        CLRWDT();								//清看门狗
+        CLRWDT();												//清看门狗
 	}
 }
 
@@ -366,33 +394,32 @@ void isr(void) interrupt
 
     if(PIE0==1 && PIF0==1)
     {
-        PIF0 = 0;					//清除外部中断
+        PIF0 = 0;							//清除外部中断
     }
 
-    if (T8NIE==1 && T8NIF==1)       //定时器2ms溢出中断
+    if (T8NIE==1 && T8NIF==1)				//定时器2ms溢出中断
     {
-        T8NIF = 0;					//清标志位
-        T8N = 131;					//进中断先赋计数器初值
+        T8NIF = 0;							//清标志位
+        T8N = 131;							//进中断先赋计数器初值
 
 		if (timer_cnt < 250)
 		{
 			timer_cnt++;
-			if (timer_cnt >= 4)		//两字节间隔8ms
+			if (timer_cnt >= 8)				//两字节间隔8ms
 			{
 				timer_cnt = 250;
-				RX_OK_flag = 1;		//置位完成标志
+				RX_OK_flag = 1;				//置位完成标志
 			}
-		
 		}
     }
 
     if(RX0IE==1 && RX0IF==1)
     {
-		timer_cnt = 0;				//重新计数
+		timer_cnt = 0;						//重新计数
 		rxbuf[rxbuf[0] + 1] = RX0B;
 		rxbuf[0] = rxbuf[0] + 1;
 
-		if(rxbuf[0] > 30)			//接收限制
+		if(rxbuf[0] > 30)					//接收限制
 		{
 			rxbuf[0] = 30;
 		}
@@ -400,10 +427,10 @@ void isr(void) interrupt
 
 	if(KIE && KMSK4 && KIF)
     {
-		KIF = 0;       //清除外部中断
+		KIF = 0;							//清除外部中断
 		if(IRQ)
 		{
-			_hw2000b_irq_request = 1;
+			hw2000b_irq_request = 1;
 		}
     }
 

@@ -23,22 +23,6 @@
 * 修订历史：
 * 修订日期：
 **************************************************************************/
-//void delay_ms(uint16_t ms)
-//{
-    //uint16_t i;
-
-	//T8N = 130;		//定时时间: (255-130)*8us = 1000us=1ms
-    //T8NC = 0x8E;    //0x8D:预分频1:64 (32M/2/64)= 1/8M = 8us
-	//T8NIF = 0;
-	//T8NIE = 0;
-
-	//for (i = 0; i < ms; i++) {
-        //while(!T8NIF);
-		//T8NIF = 0;
-		//T8N += 130;
-    //}
-//}
-
 void delay_ms(uint16_t ms)
 {
 	uint16_t i;
@@ -63,7 +47,9 @@ void delay_us(uint16_t us)
 {
 	uint16_t i;
 	
-	for (i = 0; i < us; i++) {
+	for (; us>0; us--) 
+	{
+		for(i = 0;i<20;i++);
 	}
 }
 

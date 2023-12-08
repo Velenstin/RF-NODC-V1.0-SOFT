@@ -57,72 +57,72 @@ _GPIOInit
 ; 	//PA0 PINT0, PA1 RX，PA2 TX， PA3 MRST，PA4 EN，PA5 ISPDA,   PA6 NC， PA7 NC
 ; 	//PB0 PB0 NC,  PB1 NC，  PB2 NC，PB3 HW2000B_IRQ        PB4 HW2000B_SCK，PB5 HW2000B_MOSI，PB6 HW2000B_MISO，PB7 HW2000B_CE
 ; 	//PC0 HW2000B_CSN，         PC1 ISPCK
-#line 30	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; 	ANSL = 0xFF;        //选择对应端口为数字IO功能
+#line 30	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; 	ANSL = 0xFF;        //选择对应端口为数字IO功能
 	CLR            	BKSR
 ;   30:(    ASGN_1,        255 ,            ,      ANSL)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0xff
 	MOVA           	_ANSL_0
-#line 31	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; 	ANSH = 0xFF;        //选择对应端口为数字IO功能
+#line 31	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; 	ANSH = 0xFF;        //选择对应端口为数字IO功能
 ;   31:(    ASGN_1,        255 ,            ,      ANSH)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0xff
 	MOVA           	_ANSH_0
-#line 33	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ;     PAT = 0x0B;         //PA2 4 5 6 7输出，PA0 1 3输入  PINT0、RX0、MRST
-;   33:(    ASGN_1,         11 ,            ,       PAT)
+#line 33	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ;     PAT = 0x8B;         //PA2 4 5 6 输出，PA0 1 3 7输入  PINT0、RX0、MRST
+;   33:(    ASGN_1,        139 ,            ,       PAT)
 
 ; ITemplate_ASGN1_4_R
-	MOVI           	0xb
+	MOVI           	0x8b
 	MOVA           	_PAT_0
-#line 34	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ;     PBT = 0x48;			//PB0 1 2 4 5 7输出，PB3 6输入  IRQ、MISO
+#line 34	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ;     PBT = 0x48;			//PB0 1 2 4 5 7输出，PB3 6输入  IRQ、MISO
 ;   34:(    ASGN_1,         72 ,            ,       PBT)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0x48
 	MOVA           	_PBT_0
-#line 35	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ;     PCT = 0x00;			//PC0 1输出
+#line 35	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ;     PCT = 0x00;			//PC0 1输出
 ;   35:(    ASGN_1,          0 ,            ,       PCT)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	_PCT_0
-#line 37	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ;     PA = 0x00;
+#line 37	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ;     PA = 0x00;
 ;   37:(    ASGN_1,          0 ,            ,        PA)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	_PA_0
-#line 38	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ;     PB = 0x00;
+#line 38	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ;     PB = 0x00;
 ;   38:(    ASGN_1,          0 ,            ,        PB)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	_PB_0
-#line 39	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ;     PC = 0x00;
+#line 39	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ;     PC = 0x00;
 ;   39:(    ASGN_1,          0 ,            ,        PC)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	_PC_0
-#line 41	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; 	PAPU = 0;		//禁止弱上拉
+#line 41	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; 	PAPU = 0;		//禁止弱上拉
 ;   41:(    ASGN_1,          0 ,            ,      PAPU)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	_PAPU_0
-#line 43	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; 	KMSK4 = 1;   //KINT4取消屏蔽
+#line 43	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; 	KMSK4 = 1;   //KINT4取消屏蔽
 ;   43:(    ASGN_0,          1 ,            ,     KMSK4)
 
 ; ITemplate_SET_0_TMP
 	BSS            	(_KMSK4_0)/8,	(_KMSK4_0)%8
-#line 44	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; 	INTF0 = 0x00;	//清除中断标志
+#line 44	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; 	INTF0 = 0x00;	//清除中断标志
 ;   44:(    ASGN_1,          0 ,            ,     INTF0)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	_INTF0_0
-#line 45	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; 	INTE0 |= 0x10;	//使能KIE
+#line 45	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; 	INTE0 |= 0x10;	//使能KIE
 ;   45:(   ASGN_B$,          1 ,          4 ,     INTE0)
 
 ; ITemplate_SET_B1_TMP
 	BSS            	_INTE0_0,	0x4
-#line 47	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\io.c ; }
+#line 47	D:\项目工程\RF-NODC-V1.0-SOFT\src\io.c ; }
 ;   47:(       RET,            ,            ,          )
 
 ; ITemplate_RET
@@ -131,7 +131,7 @@ _GPIOInit
 SECTION0C__Program_Files__x86__HRCC_Tools_HRCC_v1_2_0_139_tools_INCLUDE_ES7P0693_h_STATIC2	UNINTIAL       		; Bank 0
 _#T0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_io_c_STATIC3	PSECT	FLAG=0X1088,ADDR=0X7FD1C
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_io_c_STATIC3	PSECT	FLAG=0X1088,ADDR=0X7FD1C
 _KMSK4_0	RSEG           	0X1		; Bank 0
 
 SECTION8C__Program_Files__x86__HRCC_Tools_HRCC_v1_2_0_139_tools_INCLUDE_ES7P0693_h_STATIC	UNINTIAL       	0		; Bank 0

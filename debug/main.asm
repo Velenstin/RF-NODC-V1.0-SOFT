@@ -82,8 +82,6 @@
 	EXTERN         	_hw2000b_rx_enable
 	EXTERN         	_hw2000b_rx_data
 	EXTERN         	_hw2000b_rx_dataDATA
-	EXTERN         	_hw2000b_power_down
-	EXTERN         	_hw2000b_power_on
 	EXTERN         	_delay_ms
 	EXTERN         	_delay_msDATA
 	EXTERN         	_delay_us
@@ -103,11 +101,12 @@
 	EXTERN         	_hw2000b_read_fifo
 	EXTERN         	_hw2000b_read_fifoDATA
 	PUBLIC         	__ack_count
-	PUBLIC         	__hw2000b_irq_request
+	PUBLIC         	_hw2000b_irq_request
 	PUBLIC         	_rx_ok
 	PUBLIC         	_sleep_flag
 	PUBLIC         	_RX_OK_flag
 	PUBLIC         	_rxbuf
+	PUBLIC         	_data_rf
 	PUBLIC         	_timer_cnt
 	PUBLIC         	_dataerr
 	PUBLIC         	_CallFlashEn
@@ -127,24 +126,34 @@
 	PUBLIC         	_TIME_Init
 	PUBLIC         	_main
 	PUBLIC         	_isr
-_main_#T21296_87	EQU            	_mainDATA + 0X0		; Bank 0
-_isr_#T21332_92	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21339_92	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21356_92	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21363_92	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21433_92	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21440_92	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21479_97	EQU            	_isrDATA + 0X0		; Bank 0
-_isr_#T21480_97	EQU            	_isrDATA + 0X2		; Bank 0
-_isr_#T21513_97	EQU            	_isrDATA + 0X0		; Bank 0
+_main_i_82	EQU            	_mainDATA + 0X0		; Bank 0
+_main_data_len_82	EQU            	_mainDATA + 0X1		; Bank 0
+_main_reg_82	EQU            	_mainDATA + 0X2		; Bank 0
+_main_#T21301_84	EQU            	_mainDATA + 0X2		; Bank 0
+_main_#T21474_90	EQU            	_mainDATA + 0X2		; Bank 0
+_main_#T21475_90	EQU            	_mainDATA + 0X4		; Bank 0
+_isr_#T21537_93	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21544_93	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21561_93	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21568_93	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21638_93	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21645_93	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21684_98	EQU            	_isrDATA + 0X0		; Bank 0
+_isr_#T21685_98	EQU            	_isrDATA + 0X2		; Bank 0
+_isr_#T21718_98	EQU            	_isrDATA + 0X0		; Bank 0
 #TMP	EQU            	?_TMP+ 0X0		; Bank 0
 ?_TMP_RET	EQU            	?_TMP		; Bank 0
 _RX0TXEN_0#sh	EQU            	0X684		; Bank 0
+_BJT0EN_0#sh	EQU            	0X685		; Bank 0
 _RX0LEN_0#sh	EQU            	0X686		; Bank 0
 _RX0EN_0#sh	EQU            	0X687		; Bank 0
+_TRMT0_0#sh	EQU            	0X691		; Bank 0
 _BRGH0_0#sh	EQU            	0X695		; Bank 0
 _TX0LEN_0#sh	EQU            	0X696		; Bank 0
+_TX0EN_0#sh	EQU            	0X697		; Bank 0
+_BR0FRA_0#sh	EQU            	0XCD		; Bank 0
 _RX0B_0#sh	EQU            	0XCF		; Bank 0
+_TX0B_0#sh	EQU            	0XD1		; Bank 0
 _BR0R_0#sh	EQU            	0XD3		; Bank 0
 _MULA_0#sh	EQU            	(MULA - 0X6080) % 0X40 + 0xC0		; Bank 0
 _MULB_0#sh	EQU            	(MULB - 0X6080) % 0X40 + 0xC0		; Bank 0
@@ -163,9 +172,9 @@ _DIVEU_0#sh	EQU            	(DIVEU - 0X6080) % 0X40 + 0xC0		; Bank 0
 _DIVEH_0#sh	EQU            	(DIVEH - 0X6080) % 0X40 + 0xC0		; Bank 0
 _FRAH_0#sh	EQU            	(FRAH - 0X6080) % 0X40 + 0xC0		; Bank 0
 _FRAL_0#sh	EQU            	(FRAL - 0X6080) % 0X40 + 0xC0		; Bank 0
-	_DESC          	sleep,0X0,0X0
-sleep#	CSEG           
-_sleep
+	_DESC          	WDT_Init,0X0,0X0
+WDT_Init#	CSEG           
+_WDT_Init
 ; /**************************************************************************
 ; * 版权声明：Copyright@2019 上海东软载波微电子有限公司
 ; * 文件名称：main.c
@@ -184,13 +193,13 @@ _sleep
 ; #include "timer.h"
 ; #include "ram.h"
 ; #include "spi.h"
-; #define CLRWDT()   {__Asm CWDT;}        //宏定义清狗指令
 ; uint16_t	_ack_count;
-; sbit		_hw2000b_irq_request;	//射频中断标志
+; sbit		hw2000b_irq_request;	//射频中断标志
 ; sbit		rx_ok;
 ; uint8_t sleep_flag = 0;
 ; uint8_t RX_OK_flag = 0;
 ; uint8_t rxbuf[40];
+; uint8_t data_rf[30];	
 ; uint8_t timer_cnt;
 ; #define STARTADDR    0xC000     //宏定义数据区IAP操作起始地址
 ; #define ENDADDR      0xC002     //宏定义数据区IAP操作结束地址
@@ -358,173 +367,51 @@ _sleep
 ; **********************************************/
 ; void sleep(void)
 ; {
-#line 215	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	T8NEN = 0;				//禁能T8N
-	CLR            	BKSR
-;  215:(    ASGN_0,          0 ,            ,     T8NEN)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_T8NEN_0)/8,	(_T8NEN_0)%8
-#line 216	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     RX0EN = 0;				//禁能串口接收
-;  216:(    ASGN_0,          0 ,            ,     RX0EN)
-
-; ITemplate_CLR_0_TMP
-	BSS            	BKSR,	0x4
-	BCC            	(_RX0EN_0#sh)/8,	(_RX0EN_0#sh)%8		; ShBank 1
-#line 218	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	INTC0 = 0xFF;			//PINT0-双沿中断
-;  218:(    ASGN_1,        255 ,            ,     INTC0)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0xff
-	MOVA           	_INTC0_0
-#line 219	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	PIE0 = 1;				//打开PINT0管脚中断
-;  219:(    ASGN_0,          1 ,            ,      PIE0)
-
-; ITemplate_SET_0_TMP
-	BSS            	(_PIE0_0)/8,	(_PIE0_0)%8
-#line 220	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     PIF0 = 0;				//睡眠前清中断标志位
-;  220:(    ASGN_0,          0 ,            ,      PIF0)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_PIF0_0)/8,	(_PIF0_0)%8
-#line 222	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	KMSK4 = 0;				//KINT4屏蔽
-;  222:(    ASGN_0,          0 ,            ,     KMSK4)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_KMSK4_0)/8,	(_KMSK4_0)%8
-#line 223	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	INTF0 = 0x00;			//清除中断标志
-;  223:(    ASGN_1,          0 ,            ,     INTF0)
-
-; ITemplate_CLR1_4_TMP
-	CLR            	_INTF0_0
-#line 224	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	INTE0 = 0x00;			//禁能KIE
-;  224:(    ASGN_1,          0 ,            ,     INTE0)
-
-; ITemplate_CLR1_4_TMP
-	CLR            	_INTE0_0
-#line 226	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	GIE = 0;				//关闭总中断
-;  226:(    ASGN_0,          0 ,            ,       GIE)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_GIE_0)/8,	(_GIE_0)%8
+; 	T8NEN = 0;				//禁能T8N
+;     RX0EN = 0;				//禁能串口接收
+; 	INTC0 = 0xFF;			//PINT0-双沿中断
+; 	PIE0 = 1;				//打开PINT0管脚中断
+;     PIF0 = 0;				//睡眠前清中断标志位
+; 	KMSK4 = 0;				//KINT4屏蔽
+; 	INTF0 = 0x00;			//清除中断标志
+; 	INTE0 = 0x00;			//禁能KIE
+; 	GIE = 0;				//关闭总中断
 ; 							
-#line 229	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	PWEN &= 0xFD;			//禁止IDLE状态下计数
-;  229:(   ASGN_B$,          0 ,          1 ,      PWEN)
-
-; ITemplate_CLR_B1_TMP
-	BCC            	_PWEN_0,	0x1
-#line 230	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	WKDC = 0x1F;
-;  230:(    ASGN_1,         31 ,            ,      WKDC)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0x1f
-	MOVA           	_WKDC_0
-#line 231	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	PWRC = 0x8F;			//选择IDLE模式
-;  231:(    ASGN_1,        143 ,            ,      PWRC)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0x8f
-	MOVA           	_PWRC_0
-#line 232	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     __Asm IDLE;				//进入IDLE模式
-; ITemplate_LABEL
-;-----------Embedded Asm--------------
-	IDLE
-;-------------------------------------
-#line 234	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	GIE = 1;				//打开总中断
-;  234:(    ASGN_0,          1 ,            ,       GIE)
-
-; ITemplate_SET_0_TMP
-	BSS            	(_GIE_0)/8,	(_GIE_0)%8
-#line 236	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	KMSK4 = 1;				//KINT4取消屏蔽
-;  236:(    ASGN_0,          1 ,            ,     KMSK4)
-
-; ITemplate_SET_0_TMP
-	BSS            	(_KMSK4_0)/8,	(_KMSK4_0)%8
-#line 237	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	INTF0 = 0x00;			//清除中断标志
-;  237:(    ASGN_1,          0 ,            ,     INTF0)
-
-; ITemplate_CLR1_4_TMP
-	CLR            	_INTF0_0
-#line 238	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	INTE0 |= 0x10;			//使能KIE
-;  238:(   ASGN_B$,          1 ,          4 ,     INTE0)
-
-; ITemplate_SET_B1_TMP
-	BSS            	_INTE0_0,	0x4
-#line 240	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	INTC0 = 0xFF;			//PINT0-双沿中断
-;  240:(    ASGN_1,        255 ,            ,     INTC0)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0xff
-	MOVA           	_INTC0_0
-#line 241	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	PIE0 = 0;				//关闭PINT0管脚中断
-;  241:(    ASGN_0,          0 ,            ,      PIE0)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_PIE0_0)/8,	(_PIE0_0)%8
-#line 242	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     PIF0 = 0;				//睡眠前清中断标志位
-;  242:(    ASGN_0,          0 ,            ,      PIF0)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_PIF0_0)/8,	(_PIF0_0)%8
-#line 244	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	T8NIE = 1;				//打开定时器溢出中断
-;  244:(    ASGN_0,          1 ,            ,     T8NIE)
-
-; ITemplate_SET_0_TMP
-	BSS            	(_T8NIE_0)/8,	(_T8NIE_0)%8
-#line 245	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	T8NIF = 0;				//清标志位
-;  245:(    ASGN_0,          0 ,            ,     T8NIF)
-
-; ITemplate_CLR_0_TMP
-	BCC            	(_T8NIF_0)/8,	(_T8NIF_0)%8
-#line 246	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	T8N = 131;				//赋计数器初值   2ms
-;  246:(    ASGN_1,        131 ,            ,       T8N)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0x83
-	MOVA           	_T8N_0
-#line 247	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	T8NEN = 1;				//使能T8N
-;  247:(    ASGN_0,          1 ,            ,     T8NEN)
-
-; ITemplate_SET_0_TMP
-	BSS            	(_T8NEN_0)/8,	(_T8NEN_0)%8
-#line 249	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	timer_cnt = 250;
-;  249:(    ASGN_1,        250 ,            , timer_cnt)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0xfa
-	SECTION        	0x1
-	MOVA           	(_timer_cnt) & 0X7F		; Bank 1
-#line 251	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	RX0EN = 1;			//使能串口接收
-;  251:(    ASGN_0,          1 ,            ,     RX0EN)
-
-; ITemplate_SET_0_TMP
-	BSS            	(_RX0EN_0#sh)/8,	(_RX0EN_0#sh)%8		; ShBank 1
-#line 252	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; }
-;  252:(       RET,            ,            ,          )
-
-; ITemplate_RET
-	SECTION        	0x0
-	BCC            	BKSR,	0x4
-	RET            			; Bank 0		; ShBank 0
-	_DESC          	WDT_Init,0X0,0X0
-WDT_Init#	CSEG           
-_WDT_Init
+; 	PWEN &= 0xFD;			//禁止IDLE状态下计数
+; 	WKDC = 0x1F;
+; 	PWRC = 0x8F;			//选择IDLE模式
+;     __Asm IDLE;				//进入IDLE模式
+; 	GIE = 1;				//打开总中断
+; 	KMSK4 = 1;				//KINT4取消屏蔽
+; 	INTF0 = 0x00;			//清除中断标志
+; 	INTE0 |= 0x10;			//使能KIE
+; 	INTC0 = 0xFF;			//PINT0-双沿中断
+; 	PIE0 = 0;				//关闭PINT0管脚中断
+;     PIF0 = 0;				//睡眠前清中断标志位
+; 	T8NIE = 1;				//打开定时器溢出中断
+; 	T8NIF = 0;				//清标志位
+; 	T8N = 131;				//赋计数器初值   2ms
+; 	T8NEN = 1;				//使能T8N
+; 	timer_cnt = 250;
+; 	RX0EN = 1;				//使能串口接收
+; }
 ; void WDT_Init(void)
 ; {
-#line 257	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     WDTC = 0x16;         //分频比1:128，使能WDT预分频器，看门狗溢出时间t=256*128/32000=1.024s
+#line 258	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     WDTC = 0x16;			//分频比1:128，使能WDT预分频器，看门狗溢出时间t=256*128/32000=1.024s
 	CLR            	BKSR
-;  257:(    ASGN_1,         22 ,            ,      WDTC)
+;  258:(    ASGN_1,         22 ,            ,      WDTC)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0x16
 	MOVA           	_WDTC_0
-#line 258	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     PWEN &= 0xFD;
-;  258:(   ASGN_B$,          0 ,          1 ,      PWEN)
+#line 259	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     PWEN &= 0xFD;
+;  259:(   ASGN_B$,          0 ,          1 ,      PWEN)
 
 ; ITemplate_CLR_B1_TMP
 	BCC            	_PWEN_0,	0x1
-;     PWEN |= 0<<1;		//禁止IDLE状态下计数
-#line 260	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; }
-;  260:(       RET,            ,            ,          )
+;     PWEN |= 0<<1;			//禁止IDLE状态下计数
+#line 261	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; }
+;  261:(       RET,            ,            ,          )
 
 ; ITemplate_RET
 	RET            			; Bank 0		; ShBank 0
@@ -533,47 +420,63 @@ UART_Init#	CSEG
 _UART_Init
 ; void UART_Init(void)
 ; {
-#line 264	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     RX0LEN = 0;     //8位数据接收格式
+#line 265	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     RX0LEN = 0;				//8位数据接收格式
 	CLR            	BKSR
-;  264:(    ASGN_0,          0 ,            ,    RX0LEN)
+;  265:(    ASGN_0,          0 ,            ,    RX0LEN)
 
 ; ITemplate_CLR_0_TMP
 	BSS            	BKSR,	0x4
 	BCC            	(_RX0LEN_0#sh)/8,	(_RX0LEN_0#sh)%8		; ShBank 1
-#line 265	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     TX0LEN = 0;     //8位数据发送格式
-;  265:(    ASGN_0,          0 ,            ,    TX0LEN)
+#line 266	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     TX0LEN = 0;				//8位数据发送格式
+;  266:(    ASGN_0,          0 ,            ,    TX0LEN)
 
 ; ITemplate_CLR_0_TMP
 	BCC            	(_TX0LEN_0#sh)/8,	(_TX0LEN_0#sh)%8		; ShBank 1
-; 	//BJT0EN = 1;		//波特率去抖使能
-;     //BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*BRRDIV))
-;     //BR0R = 0xD0;    //波特率整数部分=16MHz/(64*1200bps)=208.3333
-; 	//BR0FRA = 0x05;	//波特率小数部分=16*0.3333 ≈ 5
-;     //BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*(BRR<7:0>+1))
-;     //BR0R = 0x19;    //波特率=16MHz/(64*(25+1))≈9600bps
-#line 274	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*(BRR<7:0>+1))
-;  274:(    ASGN_0,          0 ,            ,     BRGH0)
+#line 267	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	BJT0EN = 1;				//波特率去抖使能
+;  267:(    ASGN_0,          1 ,            ,    BJT0EN)
+
+; ITemplate_SET_0_TMP
+	BSS            	(_BJT0EN_0#sh)/8,	(_BJT0EN_0#sh)%8		; ShBank 1
+#line 268	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     BRGH0 = 0;				//波特率低速模式：波特率=Fosc/(64*BRRDIV))
+;  268:(    ASGN_0,          0 ,            ,     BRGH0)
 
 ; ITemplate_CLR_0_TMP
 	BCC            	(_BRGH0_0#sh)/8,	(_BRGH0_0#sh)%8		; ShBank 1
-#line 275	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     BR0R = 0x33;    //波特率=16MHz/(64*(51+1))≈4800bps
-;  275:(    ASGN_1,         51 ,            ,      BR0R)
+#line 269	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     BR0R = 0xD0;			//波特率整数部分=16MHz/(64*1200bps)=208.3333
+;  269:(    ASGN_1,        208 ,            ,      BR0R)
 
 ; ITemplate_ASGN1_4_R
-	MOVI           	0x33
+	MOVI           	0xd0
 	MOVA           	_BR0R_0#sh		; ShBank 1
-#line 277	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	RX0TXEN = 1;		//串口管脚交互，RX0=0 ,TX0=1
-;  277:(    ASGN_0,          1 ,            ,   RX0TXEN)
+#line 270	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	BR0FRA = 0x05;			//波特率小数部分=16*0.3333 ≈ 5
+;  270:(    ASGN_1,          5 ,            ,    BR0FRA)
+
+; ITemplate_ASGN1_4_R
+	MOVI           	0x5
+	MOVA           	_BR0FRA_0#sh		; ShBank 1
+;     //BRGH0 = 0;      //波特率低速模式：波特率=Fosc/(64*(BRR<7:0>+1))
+;     //BR0R = 0x33;    //波特率=16MHz/(64*(51+1))≈4800bps
+#line 275	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	RX0TXEN = 1;			//串口管脚交互，RX0=0 ,TX0=1
+;  275:(    ASGN_0,          1 ,            ,   RX0TXEN)
 
 ; ITemplate_SET_0_TMP
 	BSS            	(_RX0TXEN_0#sh)/8,	(_RX0TXEN_0#sh)%8		; ShBank 1
-#line 279	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	RX0IE = 1;			//接收中断
-;  279:(    ASGN_0,          1 ,            ,     RX0IE)
+#line 277	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	RX0IE = 1;				//接收中断
+;  277:(    ASGN_0,          1 ,            ,     RX0IE)
 
 ; ITemplate_SET_0_TMP
 	BSS            	(_RX0IE_0)/8,	(_RX0IE_0)%8
-; 	//RX0EN = 1;          //打开串口接收
-#line 281	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; }
+#line 278	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	RX0EN = 1;				//打开串口接收
+;  278:(    ASGN_0,          1 ,            ,     RX0EN)
+
+; ITemplate_SET_0_TMP
+	BSS            	(_RX0EN_0#sh)/8,	(_RX0EN_0#sh)%8		; ShBank 1
+#line 280	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	TX0EN = 1;				//打开串口发送
+;  280:(    ASGN_0,          1 ,            ,     TX0EN)
+
+; ITemplate_SET_0_TMP
+	BSS            	(_TX0EN_0#sh)/8,	(_TX0EN_0#sh)%8		; ShBank 1
+#line 281	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; }
 ;  281:(       RET,            ,            ,          )
 
 ; ITemplate_RET
@@ -584,52 +487,52 @@ TIME_Init#	CSEG
 _TIME_Init
 ; void TIME_Init(void)
 ; {
-#line 285	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     T8NC = 0x0E;         //定时器模式，预分频1:(Fosc/2)/128
+#line 285	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     T8NC = 0x0E;			//定时器模式，预分频1:(Fosc/2)/128
 	CLR            	BKSR
 ;  285:(    ASGN_1,         14 ,            ,      T8NC)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0xe
 	MOVA           	_T8NC_0
-#line 286	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     T8N = 131;           //赋计数器初值   2ms
+#line 286	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     T8N = 131;				//赋计数器初值   2ms
 ;  286:(    ASGN_1,        131 ,            ,       T8N)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0x83
 	MOVA           	_T8N_0
-#line 287	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     T8NIE = 1;           //打开定时器溢出中断
+#line 287	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     T8NIE = 1;				//打开定时器溢出中断
 ;  287:(    ASGN_0,          1 ,            ,     T8NIE)
 
 ; ITemplate_SET_0_TMP
 	BSS            	(_T8NIE_0)/8,	(_T8NIE_0)%8
-#line 288	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     T8NIF = 0;           //清溢出标志位
+#line 288	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     T8NIF = 0;				//清溢出标志位
 ;  288:(    ASGN_0,          0 ,            ,     T8NIF)
 
 ; ITemplate_CLR_0_TMP
 	BCC            	(_T8NIF_0)/8,	(_T8NIF_0)%8
-#line 290	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     T8NEN = 1;           //使能T8N
+#line 290	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     T8NEN = 1;				//使能T8N
 ;  290:(    ASGN_0,          1 ,            ,     T8NEN)
 
 ; ITemplate_SET_0_TMP
 	BSS            	(_T8NEN_0)/8,	(_T8NEN_0)%8
-#line 292	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	timer_cnt = 250;	 //
+#line 292	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	timer_cnt = 250;		//
 ;  292:(    ASGN_1,        250 ,            , timer_cnt)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0xfa
 	SECTION        	0x1
 	MOVA           	(_timer_cnt) & 0X7F		; Bank 1
-#line 293	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; }
+#line 293	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; }
 ;  293:(       RET,            ,            ,          )
 
 ; ITemplate_RET
 	SECTION        	0x0
 	RET            			; Bank 0		; ShBank 0
-	_DESC          	main,0X0,0X0,GPIOInit,WDT_Init,UART_Init,TIME_Init,spi_init,hw2000b_port_init,hw2000b_init_250k,hw2000b_power_down,sleep,hw2000b_power_on,hw2000b_tx_data
+	_DESC          	main,0X2,0X0,GPIOInit,WDT_Init,UART_Init,TIME_Init,spi_init,hw2000b_port_init,hw2000b_init_250k,hw2000b_tx_data,hw2000b_write_reg,delay_us,hw2000b_read_reg,hw2000b_read_fifo
 
 SECTION1main	UNINTIAL       	0		; Bank 0
 	ORG            	0X83		; Bank 0
-_mainDATA	RSEG           	0X2		; Bank 0
+_mainDATA	RSEG           	0X6		; Bank 0
 main#	CSEG           
 _main
 ; /**************************************************************************
@@ -644,211 +547,536 @@ _main
 ; **************************************************************************/
 ; void main(void) 
 ; {
-#line 308	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     GPIOInit();										//初始化GPIO
+; 	uint8_t i;
+; 	uint8_t data_buf,data_len;
+; 	uint16_t reg;
+#line 312	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     GPIOInit();										//初始化GPIO
 	CLR            	BKSR
-;  308:(      CALL, (GPIOInit.0) ,            ,          )
+;  312:(      CALL, (GPIOInit.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_GPIOInit
 	CALL           	_GPIOInit		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 309	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	WDT_Init();										//初始化看门狗
-;  309:(      CALL, (WDT_Init.0) ,            ,          )
+#line 313	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	WDT_Init();										//初始化看门狗
+;  313:(      CALL, (WDT_Init.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_WDT_Init
 	CALL           	_WDT_Init		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 310	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	UART_Init();									//初始化串口
-;  310:(      CALL, (UART_Init.0) ,            ,          )
+#line 314	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	UART_Init();									//初始化串口
+;  314:(      CALL, (UART_Init.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_UART_Init
 	CALL           	_UART_Init		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 311	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	TIME_Init();									//初始化定时器
-;  311:(      CALL, (TIME_Init.0) ,            ,          )
+#line 315	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	TIME_Init();									//初始化定时器
+;  315:(      CALL, (TIME_Init.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_TIME_Init
 	CALL           	_TIME_Init		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 313	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	rxbuf[0] = 0;									//清串口计数值
-;  313:(    ASGN_1,          0 ,            ,*(rxbuf.0))
+#line 317	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	rxbuf[0] = 0;									//清串口计数值
+;  317:(    ASGN_1,          0 ,            ,*(rxbuf.0))
 
 ; ITemplate_ASGN1_4
 	MOVI           	0x0
 	MOVAR          	_rxbuf		; Bank 1
-#line 314	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	RX_OK_flag = 0;									//清串口接收完成标志
-;  314:(    ASGN_1,          0 ,            ,RX_OK_flag)
+#line 318	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	RX_OK_flag = 0;									//清串口接收完成标志
+;  318:(    ASGN_1,          0 ,            ,RX_OK_flag)
 
 ; ITemplate_CLR1_4_TMP
 	SECTION        	0x1
 	CLR            	(_RX_OK_flag) & 0X7F		; Bank 1
-#line 315	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	sleep_flag = 1;									//上电休眠
-;  315:(    ASGN_1,          1 ,            ,sleep_flag)
-
-; ITemplate_ASGN1_4_R
-	MOVI           	0x1
-	MOVA           	(_sleep_flag) & 0X7F		; Bank 1
-#line 317	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	spi_init();										//初始化SPI端口
-;  317:(      CALL, (spi_init.0) ,            ,          )
+#line 320	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	spi_init();										//初始化SPI端口
+;  320:(      CALL, (spi_init.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_spi_init
 	CALL           	_spi_init		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 319	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	hw2000b_port_init();							//初始化射频端口
-;  319:(      CALL, (hw2000b_port_init.0) ,            ,          )
+#line 322	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	hw2000b_port_init();							//初始化射频端口
+;  322:(      CALL, (hw2000b_port_init.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_hw2000b_port_init
 	CALL           	_hw2000b_port_init		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 320	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	hw2000b_init_250k();							//初始化射频参数
-;  320:(      CALL, (hw2000b_init_250k.0) ,            ,          )
+#line 323	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	hw2000b_init_250k();							//初始化射频参数
+;  323:(      CALL, (hw2000b_init_250k.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_hw2000b_init_250k
 	CALL           	_hw2000b_init_250k		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 321	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	hw2000b_power_down();							//关闭射频模块
-;  321:(      CALL, (hw2000b_power_down.0) ,            ,          )
-
-; ITemplate_CALL
-	SEGMENTSEL     	_hw2000b_power_down
-	CALL           	_hw2000b_power_down		; Bank 0		; ShBank 0
-	SEGMENTSEL     	$
-#line 323	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	GIE = 1;										//全局中断使能
-;  323:(    ASGN_0,          1 ,            ,       GIE)
+#line 325	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	GIE = 1;										//全局中断使能
+;  325:(    ASGN_0,          1 ,            ,       GIE)
 
 ; ITemplate_SET_0_TMP
 	BSS            	(_GIE_0)/8,	(_GIE_0)%8
-#line 325	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	while(1) 
-;  325:(     LABEL,    #L21244 ,            ,          )
+#line 327	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	while(1) 
+;  327:(     LABEL,    #L21260 ,            ,          )
 
 ; ITemplate_LABEL
-#L21244
+#L21260
 ; 	{
-#line 327	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		if(sleep_flag)							//睡眠标志位判断
-;  327:(      JZ_1, sleep_flag ,            ,   #L21249)
+#line 329	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		if (RX_OK_flag)											//串口接收完成标志位判断
+;  329:(      JZ_1, RX_OK_flag ,            ,   #L21265)
 
 ; ITemplate_JZ1_4
 	SECTION        	0x1
-	MOV            	(_sleep_flag) & 0X7F,	0x0		; Bank 1
-	JBC            	PSW,	0x2
-	GOTO           	#L21249
-; 		{
-#line 329	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			sleep();							//进入睡眠函数
-;  329:(      CALL,  (sleep.0) ,            ,          )
-
-; ITemplate_CALL
-	SEGMENTSEL     	_sleep
-	CALL           	_sleep		; Bank 0		; ShBank 0
-	SEGMENTSEL     	$
-#line 330	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			sleep_flag = 0;						//清睡眠标志位
-;  330:(    ASGN_1,          0 ,            ,sleep_flag)
-
-; ITemplate_CLR1_4_TMP
-	SECTION        	0x1
-	CLR            	(_sleep_flag) & 0X7F		; Bank 1
-#line 331	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		}
-;  331:(     LABEL,    #L21249 ,            ,          )
-
-; ITemplate_LABEL
-#L21249
-#line 333	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		if (RX_OK_flag)							//串口接收完成标志位判断
-;  333:(      JZ_1, RX_OK_flag ,            ,   #L21262)
-
-; ITemplate_JZ1_4
 	MOV            	(_RX_OK_flag) & 0X7F,	0x0		; Bank 1
 	JBC            	PSW,	0x2
-	GOTO           	#L21262
+	GOTO           	#L21265
 ; 		{
-#line 335	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			RX_OK_flag = 0;						//清接收完成标志位
-;  335:(    ASGN_1,          0 ,            ,RX_OK_flag)
+#line 331	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			RX_OK_flag = 0;										//清接收完成标志位
+;  331:(    ASGN_1,          0 ,            ,RX_OK_flag)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	(_RX_OK_flag) & 0X7F		; Bank 1
-#line 336	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			CLRWDT();
-; ITemplate_LABEL
-;-----------Embedded Asm--------------
-	CWDT
-;-------------------------------------
-#line 338	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			hw2000b_power_on();					//打开射频模块
-;  338:(      CALL, (hw2000b_power_on.0) ,            ,          )
+#line 332	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			RX0EN = 0;											//关闭串口接收
+;  332:(    ASGN_0,          0 ,            ,     RX0EN)
 
-; ITemplate_CALL
-	SEGMENTSEL     	_hw2000b_power_on
-	CALL           	_hw2000b_power_on		; Bank 0		; ShBank 0
-	SEGMENTSEL     	$
-#line 339	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			hw2000b_tx_data(rxbuf, rxbuf[0] + 1);	//发送串口数据
-;  339:(    PARA_2,  (rxbuf.0) ,            ,       buf)
+; ITemplate_CLR_0_TMP
+	BSS            	BKSR,	0x4
+	BCC            	(_RX0EN_0#sh)/8,	(_RX0EN_0#sh)%8		; ShBank 1
+#line 333	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_tx_data(rxbuf, rxbuf[0] + 1);				//发送串口数据
+;  333:(    PARA_2,  (rxbuf.0) ,            ,       buf)
 
 ; ITemplate_ASGN1_4
 	MOVI           	_rxbuf
-	MOVAR          	_hw2000b_tx_dataDATA+0X0		; Bank 1
+	MOVA           	(_hw2000b_tx_dataDATA+0X0) & 0X7F		; Bank 1
 	MOVI           	HIGH(_rxbuf)
-	MOVAR          	_hw2000b_tx_dataDATA+0X0+0x1		; Bank 1
-;  339:(     ADD_1, *(rxbuf.0) ,          1 ,      size)
+	MOVA           	(_hw2000b_tx_dataDATA+0X0+0x1) & 0X7F		; Bank 1
+;  333:(     ADD_1, *(rxbuf.0) ,          1 ,      size)
 
 ; ITemplate_ADD1_4
-	MOVRA          	_rxbuf		; Bank 1
+	MOV            	(_rxbuf) & 0X7F,	0x0		; Bank 1
 	ADDI           	0x1
-	MOVAR          	_hw2000b_tx_dataDATA+0X2		; Bank 1
+	MOVA           	(_hw2000b_tx_dataDATA+0X2) & 0X7F		; Bank 1
 ; ITemplate_Add_Ext_U
-	SECTION        	0x1
 	CLR            	(_hw2000b_tx_dataDATA+0X2+0x1) & 0X7F		; Bank 1
 	RL             	(_hw2000b_tx_dataDATA+0X2+0x1) & 0X7F,	0x1		; Bank 1
-;  339:(      CALL, (hw2000b_tx_data.0) ,            ,          )
+;  333:(      CALL, (hw2000b_tx_data.0) ,            ,          )
 
 ; ITemplate_CALL
 	SEGMENTSEL     	_hw2000b_tx_data
 	CALL           	_hw2000b_tx_data		; Bank 0		; ShBank 0
 	SEGMENTSEL     	$
-#line 340	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			hw2000b_power_down();				//关闭射频模块
-;  340:(      CALL, (hw2000b_power_down.0) ,            ,          )
+#line 334	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			RX0EN = 1;											//打开串口接收
+;  334:(    ASGN_0,          1 ,            ,     RX0EN)
 
-; ITemplate_CALL
-	SEGMENTSEL     	_hw2000b_power_down
-	CALL           	_hw2000b_power_down		; Bank 0		; ShBank 0
-	SEGMENTSEL     	$
-#line 341	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			CLRWDT();
-; ITemplate_LABEL
-;-----------Embedded Asm--------------
-	CWDT
-;-------------------------------------
-#line 343	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			rxbuf[0] = 0;						//清除计数值
-;  343:(    ASGN_1,          0 ,            ,*(rxbuf.0))
+; ITemplate_SET_0_TMP
+	BSS            	BKSR,	0x4
+	BSS            	(_RX0EN_0#sh)/8,	(_RX0EN_0#sh)%8		; ShBank 1
+#line 335	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			rxbuf[0] = 0;										//清除计数值
+;  335:(    ASGN_1,          0 ,            ,*(rxbuf.0))
 
 ; ITemplate_ASGN1_4
 	MOVI           	0x0
 	MOVAR          	_rxbuf		; Bank 1
-#line 345	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			sleep_flag = 1;						//置睡眠标志位
-;  345:(    ASGN_1,          1 ,            ,sleep_flag)
+#line 336	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		}
+;  336:(       JMP,            ,            ,   #L21263)
 
-; ITemplate_ASGN1_4_R
-	MOVI           	0x1
-	MOVAR          	_sleep_flag		; Bank 1
-#line 346	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		}
-;  346:(     LABEL,    #L21262 ,            ,          )
+; ITemplate_JMP
+	GOTO           	#L21263
+#line 337	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		else
+;  337:(     LABEL,    #L21265 ,            ,          )
 
 ; ITemplate_LABEL
-#L21262
-#line 348	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;         CLRWDT();								//清看门狗
+#L21265
+; 		{
+#line 339	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_irq_request = 0;							//清中断标志位
+;  339:(    ASGN_0,          0 ,            ,hw2000b_irq_request)
+
+; ITemplate_CLR_0_TMP
+	SECTION        	0x0
+	BCC            	((_hw2000b_irq_request)/8) & 0X7F,	(_hw2000b_irq_request)%8		; Bank 0
+#line 340	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x36, 0x0080);					//FIFO0 enable
+;  340:(    PARA_1,         54 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x36
+	MOVAR          	_hw2000b_write_regDATA+0X0		; Bank 1
+;  340:(    PARA_2,        128 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x80
+	MOVAR          	_hw2000b_write_regDATA+0X1		; Bank 1
+	MOVI           	0x0
+	MOVAR          	_hw2000b_write_regDATA+0X1+0x1		; Bank 1
+;  340:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 341	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x37, 0x0000);					//FIFO1 disable
+;  341:(    PARA_1,         55 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x37
+	MOVAR          	_hw2000b_write_regDATA+0X0		; Bank 1
+;  341:(    PARA_2,          0 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x0
+	MOVAR          	_hw2000b_write_regDATA+0X1		; Bank 1
+	MOVI           	0x0
+	MOVAR          	_hw2000b_write_regDATA+0X1+0x1		; Bank 1
+;  341:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 342	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x21, 0x0080);					//RX enable 
+;  342:(    PARA_1,         33 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x21
+	MOVAR          	_hw2000b_write_regDATA+0X0		; Bank 1
+;  342:(    PARA_2,        128 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x80
+	MOVAR          	_hw2000b_write_regDATA+0X1		; Bank 1
+	MOVI           	0x0
+	MOVAR          	_hw2000b_write_regDATA+0X1+0x1		; Bank 1
+;  342:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 343	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			delay_us(5);
+;  343:(    PARA_2,          5 ,            ,     delay)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x5
+	MOVAR          	_delay_usDATA+0X0		; Bank 1
+	MOVI           	0x0
+	MOVAR          	_delay_usDATA+0X0+0x1		; Bank 1
+;  343:(      CALL, (delay_us.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_delay_us
+	CALL           	_delay_us		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 345	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			while ((!hw2000b_irq_request) && (!RX_OK_flag))
+;  345:(     LABEL,    #L21360 ,            ,          )
+
+; ITemplate_LABEL
+#L21360
+;  345:(     JNZ_0, hw2000b_irq_request ,            ,   #L21362)
+
+; ITemplate_JNZ_0
+	JBC            	((_hw2000b_irq_request)/8) & 0X7F,	(_hw2000b_irq_request)%8		; Bank 0
+	GOTO           	#L21362
+;  345:(     JNZ_1, RX_OK_flag ,            ,   #L21362)
+
+; ITemplate_JNZ1_4
+	SECTION        	0x1
+	MOV            	(_RX_OK_flag) & 0X7F,	0x0		; Bank 1
+	JBS            	PSW,	0x2
+	GOTO           	#L21362
+; 			{
+#line 347	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 				CLRWDT();										//清看门狗
 ; ITemplate_LABEL
 ;-----------Embedded Asm--------------
 	CWDT
 ;-------------------------------------
-#line 349	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	}
-;  349:(       JMP,            ,            ,   #L21244)
+#line 348	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 				delay_us(5);
+;  348:(    PARA_2,          5 ,            ,     delay)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x5
+	MOVA           	(_delay_usDATA+0X0) & 0X7F		; Bank 1
+	MOVI           	0x0
+	MOVA           	(_delay_usDATA+0X0+0x1) & 0X7F		; Bank 1
+;  348:(      CALL, (delay_us.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_delay_us
+	CALL           	_delay_us		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 349	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			}
+;  349:(       JMP,            ,            ,   #L21360)
 
 ; ITemplate_JMP
-	GOTO           	#L21244
+	GOTO           	#L21360
+;  349:(     LABEL,    #L21362 ,            ,          )
+
+; ITemplate_LABEL
+#L21362
+#line 351	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			if (hw2000b_irq_request)
+;  351:(      JZ_0, hw2000b_irq_request ,            ,   #L21374)
+
+; ITemplate_JZ_0
+	SECTION        	0x0
+	JBS            	((_hw2000b_irq_request)/8) & 0X7F,	(_hw2000b_irq_request)%8		; Bank 0
+	GOTO           	#L21374
+; 			{
+#line 353	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 				reg = hw2000b_read_reg(0x36);					//读取状态寄存器
+;  353:(    PARA_1,         54 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x36
+	SECTION        	0x1
+	MOVA           	(_hw2000b_read_regDATA+0X0) & 0X7F		; Bank 1
+;  353:(     CALLR, (hw2000b_read_reg.0) ,            ,       reg)
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_read_reg
+	CALL           	_hw2000b_read_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+	MOVAR          	_main_reg_82		; Bank 1
+	MOV            	(?_TMP+0x1) & 0X7F,	0x0		; Bank 0
+	MOVAR          	_main_reg_82+0x1		; Bank 1
+#line 354	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 				if ((reg & 0x2000) == 0)
+;  354:(     JNZ_B,        reg ,         13 ,   #L21374)
+
+; ITemplate_JNZ_B1_TMP
+	SECTION        	0x1
+	JBC            	(_main_reg_82+0x1) & 0X7F,	0x5		; Bank 1
+	GOTO           	#L21374
+; 				{     
+#line 356	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 					hw2000b_read_fifo(0x32, data_rf, 1);		//读取接收数据长度值
+;  356:(    PARA_1,         50 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x32
+	MOVA           	(_hw2000b_read_fifoDATA+0X0) & 0X7F		; Bank 1
+;  356:(    PARA_2, (data_rf.0) ,            ,      data)
+
+; ITemplate_ASGN1_4
+	MOVI           	_data_rf
+	MOVA           	(_hw2000b_read_fifoDATA+0X1) & 0X7F		; Bank 1
+	MOVI           	HIGH(_data_rf)
+	MOVA           	(_hw2000b_read_fifoDATA+0X1+0x1) & 0X7F		; Bank 1
+;  356:(    PARA_1,          1 ,            ,    length)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x1
+	MOVA           	(_hw2000b_read_fifoDATA+0X3) & 0X7F		; Bank 1
+;  356:(      CALL, (hw2000b_read_fifo.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_read_fifo
+	CALL           	_hw2000b_read_fifo		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 357	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 					data_len = data_rf[0];
+;  357:(    ASGN_1, *(data_rf.0) ,            ,  data_len)
+
+; ITemplate_ASGN1_4
+	MOVRA          	_data_rf		; Bank 1
+	MOVAR          	_main_data_len_82		; Bank 1
+#line 358	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 					hw2000b_read_fifo(0x32, data_rf, data_len); //读取数据
+;  358:(    PARA_1,         50 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x32
+	MOVAR          	_hw2000b_read_fifoDATA+0X0		; Bank 1
+;  358:(    PARA_2, (data_rf.0) ,            ,      data)
+
+; ITemplate_ASGN1_4
+	MOVI           	_data_rf
+	MOVAR          	_hw2000b_read_fifoDATA+0X1		; Bank 1
+	MOVI           	HIGH(_data_rf)
+	MOVAR          	_hw2000b_read_fifoDATA+0X1+0x1		; Bank 1
+;  358:(    PARA_1,   data_len ,            ,    length)
+
+; ITemplate_ASGN1_4
+	MOVRA          	_main_data_len_82		; Bank 1
+	MOVAR          	_hw2000b_read_fifoDATA+0X3		; Bank 1
+;  358:(      CALL, (hw2000b_read_fifo.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_read_fifo
+	CALL           	_hw2000b_read_fifo		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 360	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 					for (i = 0; i<data_len; i++)				//根据数据长度循环发送
+;  360:(    ASGN_1,          0 ,            ,         i)
+
+; ITemplate_CLR1_4_TMP
+	SECTION        	0x1
+	CLR            	(_main_i_82) & 0X7F		; Bank 1
+;  360:(     LABEL,    #L21436 ,            ,          )
+
+; ITemplate_LABEL
+#L21436
+;  360:(    JGE_1U,          i ,   data_len ,   #L21492)
+
+; ITemplate_JGE1_4U
+	MOV            	(_main_data_len_82) & 0X7F,	0x0		; Bank 1
+	SUB            	(_main_i_82) & 0X7F,	0x0		; Bank 1
+	JBC            	PSW,	0x0
+	GOTO           	#L21492
+; 					{
+#line 362	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 						while (!TRMT0);
+;  362:(     LABEL,    #L21452 ,            ,          )
+
+; ITemplate_LABEL
+#L21452
+;  362:(      JZ_0,      TRMT0 ,            ,   #L21452)
+
+; ITemplate_JZ_0
+	BSS            	BKSR,	0x4
+	JBS            	(_TRMT0_0#sh)/8,	(_TRMT0_0#sh)%8		; ShBank 1
+	GOTO           	#L21452
+#line 363	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 						TX0B = data_rf[i];						//串口发送数据
+;  363:(   CVUC_UI,          i ,            ,   #T21474)
+
+; ITemplate_CVTMS_U
+	CLR            	(_main_#T21474_90+0x1) & 0X7F		; Bank 1
+	MOV            	(_main_i_82) & 0X7F,	0x0		; Bank 1
+	MOVA           	(_main_#T21474_90) & 0X7F		; Bank 1
+;  363:(     ADD_2,    #T21474 , (data_rf.0) ,   #T21475)
+
+; ITemplate_ADD1_4
+	MOV            	(_main_#T21474_90) & 0X7F,	0x0		; Bank 1
+	ADDI           	_data_rf
+	MOVA           	(_main_#T21475_90) & 0X7F		; Bank 1
+	MOV            	(_main_#T21474_90+0x1) & 0X7F,	0x0		; Bank 1
+	ADDCI          	HIGH(_data_rf)
+	MOVA           	(_main_#T21475_90+0x1) & 0X7F		; Bank 1
+;  363:(    ASGN_1,   *#T21475 ,            ,      TX0B)
+
+; ITemplate_GetRamRef
+	MOV            	(_main_#T21475_90+0x1) & 0X7F,	0x0		; Bank 1
+	MOVA           	IAAH
+	MOV            	(_main_#T21475_90) & 0X7F,	0x0		; Bank 1
+	MOVA           	IAAL
+	MOV            	IAD,	0x0
+	MOVAR          	?_TMP		; Bank 0
+; ITemplate_ASGN1_4
+	MOVRA          	?_TMP		; Bank 0
+	MOVA           	_TX0B_0#sh		; ShBank 1
+;  360:(     ADD_1,          i ,          1 ,         i)
+
+; ITemplate_INC_1_TMP
+	INC            	(_main_i_82) & 0X7F		; Bank 1
+#line 364	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 					}
+;  364:(       JMP,            ,            ,   #L21436)
+
+; ITemplate_JMP
+	GOTO           	#L21436
+#line 365	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 					while (!TRMT0);								//等待发送完成
+;  365:(     LABEL,    #L21492 ,            ,          )
+
+; ITemplate_LABEL
+#L21492
+;  365:(      JZ_0,      TRMT0 ,            ,   #L21492)
+
+; ITemplate_JZ_0
+	BSS            	BKSR,	0x4
+	JBS            	(_TRMT0_0#sh)/8,	(_TRMT0_0#sh)%8		; ShBank 1
+	GOTO           	#L21492
+; 				}
+#line 368	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			}
+;  368:(     LABEL,    #L21374 ,            ,          )
+
+; ITemplate_LABEL
+#L21374
+#line 370	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x3D, 0x0008);					//clear int0
+;  370:(    PARA_1,         61 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x3d
+	SECTION        	0x1
+	MOVA           	(_hw2000b_write_regDATA+0X0) & 0X7F		; Bank 1
+;  370:(    PARA_2,          8 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x8
+	MOVA           	(_hw2000b_write_regDATA+0X1) & 0X7F		; Bank 1
+	MOVI           	0x0
+	MOVA           	(_hw2000b_write_regDATA+0X1+0x1) & 0X7F		; Bank 1
+;  370:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 371	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x21, 0x0000);					//TX/RX disable
+;  371:(    PARA_1,         33 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x21
+	MOVAR          	_hw2000b_write_regDATA+0X0		; Bank 1
+;  371:(    PARA_2,          0 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x0
+	MOVAR          	_hw2000b_write_regDATA+0X1		; Bank 1
+	MOVI           	0x0
+	MOVAR          	_hw2000b_write_regDATA+0X1+0x1		; Bank 1
+;  371:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 372	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x23, 0x431B);					//复位RF状态
+;  372:(    PARA_1,         35 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x23
+	MOVAR          	_hw2000b_write_regDATA+0X0		; Bank 1
+;  372:(    PARA_2,      17179 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x1b
+	MOVAR          	_hw2000b_write_regDATA+0X1		; Bank 1
+	MOVI           	0x43
+	MOVAR          	_hw2000b_write_regDATA+0X1+0x1		; Bank 1
+;  372:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 373	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_write_reg(0x23, 0x031B);
+;  373:(    PARA_1,         35 ,            ,      addr)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x23
+	MOVAR          	_hw2000b_write_regDATA+0X0		; Bank 1
+;  373:(    PARA_2,        795 ,            ,     value)
+
+; ITemplate_ASGN1_4
+	MOVI           	0x1b
+	MOVAR          	_hw2000b_write_regDATA+0X1		; Bank 1
+	MOVI           	0x3
+	MOVAR          	_hw2000b_write_regDATA+0X1+0x1		; Bank 1
+;  373:(      CALL, (hw2000b_write_reg.0) ,            ,          )
+
+; ITemplate_CALL
+	SEGMENTSEL     	_hw2000b_write_reg
+	CALL           	_hw2000b_write_reg		; Bank 0		; ShBank 0
+	SEGMENTSEL     	$
+#line 374	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		}
+;  374:(     LABEL,    #L21263 ,            ,          )
+
+; ITemplate_LABEL
+#L21263
+#line 376	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;         CLRWDT();												//清看门狗
+; ITemplate_LABEL
+;-----------Embedded Asm--------------
+	CWDT
+;-------------------------------------
+#line 377	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	}
+;  377:(       JMP,            ,            ,   #L21260)
+
+; ITemplate_JMP
+	GOTO           	#L21260
 	_DESC          	##isr,0X0,0X0
 
 SECTION1isr	UNINTIAL       	0		; Bank 0
-	ORG            	0X91		; Bank 0
+	ORG            	0X95		; Bank 0
 _isrDATA	RSEG           	0X4		; Bank 0
 ; interrupt fun entry
 	PUBLIC         	SAVED_TMP
@@ -894,274 +1122,273 @@ _isr
 ; void isr(void) interrupt
 ; {
 ; 	uint8_t y;
-#line 367	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     if(PIE0==1 && PIF0==1)
-;  367:(    CVB_SC,       PIE0 ,            ,   #T21332)
+#line 395	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     if(PIE0==1 && PIF0==1)
+;  395:(    CVB_SC,       PIE0 ,            ,   #T21537)
 
 ; ITemplate_CVB_UC
 	MOVI           	0x0
 	JBC            	(_PIE0_0)/8,	(_PIE0_0)%8
 	MOVI           	0x1
 	SECTION        	0x1
-	MOVA           	(_isr_#T21332_92) & 0X7F		; Bank 1
-;  367:(    JNEQ_1,          1 ,    #T21332 ,   #L21326)
+	MOVA           	(_isr_#T21537_93) & 0X7F		; Bank 1
+;  395:(    JNEQ_1,          1 ,    #T21537 ,   #L21531)
 
 ; ITemplate_JNEQ1_4
-	MOV            	(_isr_#T21332_92) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21537_93) & 0X7F,	0x0		; Bank 1
 	XORI           	0x1
 	JBS            	PSW,	0x2
-	GOTO           	#L21326
-;  367:(    CVB_SC,       PIF0 ,            ,   #T21339)
+	GOTO           	#L21531
+;  395:(    CVB_SC,       PIF0 ,            ,   #T21544)
 
 ; ITemplate_CVB_UC
 	MOVI           	0x0
 	JBC            	(_PIF0_0)/8,	(_PIF0_0)%8
 	MOVI           	0x1
-	MOVA           	(_isr_#T21339_92) & 0X7F		; Bank 1
-;  367:(    JNEQ_1,          1 ,    #T21339 ,   #L21326)
+	MOVA           	(_isr_#T21544_93) & 0X7F		; Bank 1
+;  395:(    JNEQ_1,          1 ,    #T21544 ,   #L21531)
 
 ; ITemplate_JNEQ1_4
-	MOV            	(_isr_#T21339_92) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21544_93) & 0X7F,	0x0		; Bank 1
 	XORI           	0x1
 	JBS            	PSW,	0x2
-	GOTO           	#L21326
+	GOTO           	#L21531
 ;     {
-#line 369	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;         PIF0 = 0;					//清除外部中断
-;  369:(    ASGN_0,          0 ,            ,      PIF0)
+#line 397	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;         PIF0 = 0;							//清除外部中断
+;  397:(    ASGN_0,          0 ,            ,      PIF0)
 
 ; ITemplate_CLR_0_TMP
 	BCC            	(_PIF0_0)/8,	(_PIF0_0)%8
-#line 370	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     }
-;  370:(     LABEL,    #L21326 ,            ,          )
+#line 398	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     }
+;  398:(     LABEL,    #L21531 ,            ,          )
 
 ; ITemplate_LABEL
-#L21326
-#line 372	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     if (T8NIE==1 && T8NIF==1)       //定时器2ms溢出中断
-;  372:(    CVB_SC,      T8NIE ,            ,   #T21356)
+#L21531
+#line 400	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     if (T8NIE==1 && T8NIF==1)				//定时器2ms溢出中断
+;  400:(    CVB_SC,      T8NIE ,            ,   #T21561)
 
 ; ITemplate_CVB_UC
 	MOVI           	0x0
 	JBC            	(_T8NIE_0)/8,	(_T8NIE_0)%8
 	MOVI           	0x1
-	MOVA           	(_isr_#T21356_92) & 0X7F		; Bank 1
-;  372:(    JNEQ_1,          1 ,    #T21356 ,   #L21350)
+	MOVA           	(_isr_#T21561_93) & 0X7F		; Bank 1
+;  400:(    JNEQ_1,          1 ,    #T21561 ,   #L21555)
 
 ; ITemplate_JNEQ1_4
-	MOV            	(_isr_#T21356_92) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21561_93) & 0X7F,	0x0		; Bank 1
 	XORI           	0x1
 	JBS            	PSW,	0x2
-	GOTO           	#L21350
-;  372:(    CVB_SC,      T8NIF ,            ,   #T21363)
+	GOTO           	#L21555
+;  400:(    CVB_SC,      T8NIF ,            ,   #T21568)
 
 ; ITemplate_CVB_UC
 	MOVI           	0x0
 	JBC            	(_T8NIF_0)/8,	(_T8NIF_0)%8
 	MOVI           	0x1
-	MOVA           	(_isr_#T21363_92) & 0X7F		; Bank 1
-;  372:(    JNEQ_1,          1 ,    #T21363 ,   #L21350)
+	MOVA           	(_isr_#T21568_93) & 0X7F		; Bank 1
+;  400:(    JNEQ_1,          1 ,    #T21568 ,   #L21555)
 
 ; ITemplate_JNEQ1_4
-	MOV            	(_isr_#T21363_92) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21568_93) & 0X7F,	0x0		; Bank 1
 	XORI           	0x1
 	JBS            	PSW,	0x2
-	GOTO           	#L21350
+	GOTO           	#L21555
 ;     {
-#line 374	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;         T8NIF = 0;					//清标志位
-;  374:(    ASGN_0,          0 ,            ,     T8NIF)
+#line 402	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;         T8NIF = 0;							//清标志位
+;  402:(    ASGN_0,          0 ,            ,     T8NIF)
 
 ; ITemplate_CLR_0_TMP
 	BCC            	(_T8NIF_0)/8,	(_T8NIF_0)%8
-#line 375	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;         T8N = 131;					//进中断先赋计数器初值
-;  375:(    ASGN_1,        131 ,            ,       T8N)
+#line 403	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;         T8N = 131;							//进中断先赋计数器初值
+;  403:(    ASGN_1,        131 ,            ,       T8N)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0x83
 	MOVA           	_T8N_0
-#line 377	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		if (timer_cnt < 250)
-;  377:(    JGE_1U,  timer_cnt ,        250 ,   #L21350)
+#line 405	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		if (timer_cnt < 250)
+;  405:(    JGE_1U,  timer_cnt ,        250 ,   #L21555)
 
 ; ITemplate_JGE1_4U
 	MOVI           	0xfa
 	SUB            	(_timer_cnt) & 0X7F,	0x0		; Bank 1
 	JBC            	PSW,	0x0
-	GOTO           	#L21350
+	GOTO           	#L21555
 ; 		{
-#line 379	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			timer_cnt++;
-;  379:(     ADD_1,  timer_cnt ,          1 , timer_cnt)
+#line 407	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			timer_cnt++;
+;  407:(     ADD_1,  timer_cnt ,          1 , timer_cnt)
 
 ; ITemplate_INC_1_TMP
 	INC            	(_timer_cnt) & 0X7F		; Bank 1
-#line 380	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			if (timer_cnt >= 4)		//两字节间隔8ms
-;  380:(    JLT_1U,  timer_cnt ,          4 ,   #L21350)
+#line 408	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			if (timer_cnt >= 8)				//两字节间隔8ms
+;  408:(    JLT_1U,  timer_cnt ,          8 ,   #L21555)
 
 ; ITemplate_JLT1_4U
-	MOVI           	0x4
+	MOVI           	0x8
 	SUB            	(_timer_cnt) & 0X7F,	0x0		; Bank 1
 	JBS            	PSW,	0x0
-	GOTO           	#L21350
+	GOTO           	#L21555
 ; 			{
-#line 382	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 				timer_cnt = 250;
-;  382:(    ASGN_1,        250 ,            , timer_cnt)
+#line 410	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 				timer_cnt = 250;
+;  410:(    ASGN_1,        250 ,            , timer_cnt)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0xfa
 	MOVA           	(_timer_cnt) & 0X7F		; Bank 1
-#line 383	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 				RX_OK_flag = 1;		//置位完成标志
-;  383:(    ASGN_1,          1 ,            ,RX_OK_flag)
+#line 411	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 				RX_OK_flag = 1;				//置位完成标志
+;  411:(    ASGN_1,          1 ,            ,RX_OK_flag)
 
 ; ITemplate_ASGN1_4_R
 	MOVI           	0x1
 	MOVA           	(_RX_OK_flag) & 0X7F		; Bank 1
 ; 			}
-; 		
 ; 		}
-#line 387	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     }
-;  387:(     LABEL,    #L21350 ,            ,          )
+#line 414	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     }
+;  414:(     LABEL,    #L21555 ,            ,          )
 
 ; ITemplate_LABEL
-#L21350
-#line 389	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     if(RX0IE==1 && RX0IF==1)
-;  389:(    CVB_SC,      RX0IE ,            ,   #T21433)
+#L21555
+#line 416	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     if(RX0IE==1 && RX0IF==1)
+;  416:(    CVB_SC,      RX0IE ,            ,   #T21638)
 
 ; ITemplate_CVB_UC
 	MOVI           	0x0
 	JBC            	(_RX0IE_0)/8,	(_RX0IE_0)%8
 	MOVI           	0x1
-	MOVA           	(_isr_#T21433_92) & 0X7F		; Bank 1
-;  389:(    JNEQ_1,          1 ,    #T21433 ,   #L21427)
+	MOVA           	(_isr_#T21638_93) & 0X7F		; Bank 1
+;  416:(    JNEQ_1,          1 ,    #T21638 ,   #L21632)
 
 ; ITemplate_JNEQ1_4
-	MOV            	(_isr_#T21433_92) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21638_93) & 0X7F,	0x0		; Bank 1
 	XORI           	0x1
 	JBS            	PSW,	0x2
-	GOTO           	#L21427
-;  389:(    CVB_SC,      RX0IF ,            ,   #T21440)
+	GOTO           	#L21632
+;  416:(    CVB_SC,      RX0IF ,            ,   #T21645)
 
 ; ITemplate_CVB_UC
 	MOVI           	0x0
 	JBC            	(_RX0IF_0)/8,	(_RX0IF_0)%8
 	MOVI           	0x1
-	MOVA           	(_isr_#T21440_92) & 0X7F		; Bank 1
-;  389:(    JNEQ_1,          1 ,    #T21440 ,   #L21427)
+	MOVA           	(_isr_#T21645_93) & 0X7F		; Bank 1
+;  416:(    JNEQ_1,          1 ,    #T21645 ,   #L21632)
 
 ; ITemplate_JNEQ1_4
-	MOV            	(_isr_#T21440_92) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21645_93) & 0X7F,	0x0		; Bank 1
 	XORI           	0x1
 	JBS            	PSW,	0x2
-	GOTO           	#L21427
+	GOTO           	#L21632
 ;     {
-#line 391	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		timer_cnt = 0;				//重新计数
-;  391:(    ASGN_1,          0 ,            , timer_cnt)
+#line 418	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		timer_cnt = 0;						//重新计数
+;  418:(    ASGN_1,          0 ,            , timer_cnt)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	(_timer_cnt) & 0X7F		; Bank 1
-#line 392	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		rxbuf[rxbuf[0] + 1] = RX0B;
-;  392:(     ADD_1, *(rxbuf.0) ,          1 ,   #T21479)
+#line 419	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		rxbuf[rxbuf[0] + 1] = RX0B;
+;  419:(     ADD_1, *(rxbuf.0) ,          1 ,   #T21684)
 
 ; ITemplate_ADD1_4
 	MOV            	(_rxbuf) & 0X7F,	0x0		; Bank 1
 	ADDI           	0x1
-	MOVA           	(_isr_#T21479_97) & 0X7F		; Bank 1
+	MOVA           	(_isr_#T21684_98) & 0X7F		; Bank 1
 ; ITemplate_Add_Ext_U
-	CLR            	(_isr_#T21479_97+0x1) & 0X7F		; Bank 1
-	RL             	(_isr_#T21479_97+0x1) & 0X7F,	0x1		; Bank 1
-;  392:(     ADD_2,    #T21479 ,  (rxbuf.0) ,   #T21480)
+	CLR            	(_isr_#T21684_98+0x1) & 0X7F		; Bank 1
+	RL             	(_isr_#T21684_98+0x1) & 0X7F,	0x1		; Bank 1
+;  419:(     ADD_2,    #T21684 ,  (rxbuf.0) ,   #T21685)
 
 ; ITemplate_ADD1_4
-	MOV            	(_isr_#T21479_97) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21684_98) & 0X7F,	0x0		; Bank 1
 	ADDI           	_rxbuf
-	MOVA           	(_isr_#T21480_97) & 0X7F		; Bank 1
-	MOV            	(_isr_#T21479_97+0x1) & 0X7F,	0x0		; Bank 1
+	MOVA           	(_isr_#T21685_98) & 0X7F		; Bank 1
+	MOV            	(_isr_#T21684_98+0x1) & 0X7F,	0x0		; Bank 1
 	ADDCI          	HIGH(_rxbuf)
-	MOVA           	(_isr_#T21480_97+0x1) & 0X7F		; Bank 1
-;  392:(    ASGN_1,       RX0B ,            ,  *#T21480)
+	MOVA           	(_isr_#T21685_98+0x1) & 0X7F		; Bank 1
+;  419:(    ASGN_1,       RX0B ,            ,  *#T21685)
 
 ; ITemplate_ASGN1_4
 ; ITemplate_SetFSR
-	MOV            	(_isr_#T21480_97+0x1) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21685_98+0x1) & 0X7F,	0x0		; Bank 1
 	MOVA           	IAAH
-	MOV            	(_isr_#T21480_97) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21685_98) & 0X7F,	0x0		; Bank 1
 	MOVA           	IAAL
 	BSS            	BKSR,	0x4
 	MOV            	_RX0B_0#sh,	0x0		; ShBank 1
 ; ITemplate_SetINDF
 	MOVA           	IAD
 	ISTEP          	0x1
-#line 393	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		rxbuf[0] = rxbuf[0] + 1;
-;  393:(     ADD_1, *(rxbuf.0) ,          1 ,   #T21513)
+#line 420	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		rxbuf[0] = rxbuf[0] + 1;
+;  420:(     ADD_1, *(rxbuf.0) ,          1 ,   #T21718)
 
 ; ITemplate_ADD1_4
 	MOV            	(_rxbuf) & 0X7F,	0x0		; Bank 1
 	ADDI           	0x1
-	MOVA           	(_isr_#T21513_97) & 0X7F		; Bank 1
-;  393:(    ASGN_1,    #T21513 ,            ,*(rxbuf.0))
+	MOVA           	(_isr_#T21718_98) & 0X7F		; Bank 1
+;  420:(    ASGN_1,    #T21718 ,            ,*(rxbuf.0))
 
 ; ITemplate_ASGN1_4
-	MOV            	(_isr_#T21513_97) & 0X7F,	0x0		; Bank 1
+	MOV            	(_isr_#T21718_98) & 0X7F,	0x0		; Bank 1
 	MOVA           	(_rxbuf) & 0X7F		; Bank 1
-#line 395	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		if(rxbuf[0] > 30)			//接收限制
-;  395:(    JLE_1U, *(rxbuf.0) ,         30 ,   #L21427)
+#line 422	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		if(rxbuf[0] > 30)					//接收限制
+;  422:(    JLE_1U, *(rxbuf.0) ,         30 ,   #L21632)
 
 ; ITemplate_JLE1_4U
 	MOV            	(_rxbuf) & 0X7F,	0x0		; Bank 1
 	SUBI           	0x1e
 	JBC            	PSW,	0x0
-	GOTO           	#L21427
+	GOTO           	#L21632
 ; 		{
-#line 397	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			rxbuf[0] = 30;
-;  397:(    ASGN_1,         30 ,            ,*(rxbuf.0))
+#line 424	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			rxbuf[0] = 30;
+;  424:(    ASGN_1,         30 ,            ,*(rxbuf.0))
 
 ; ITemplate_ASGN1_4
 	MOVI           	0x1e
 	MOVA           	(_rxbuf) & 0X7F		; Bank 1
 ; 		}
-#line 399	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ;     }
-;  399:(     LABEL,    #L21427 ,            ,          )
+#line 426	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ;     }
+;  426:(     LABEL,    #L21632 ,            ,          )
 
 ; ITemplate_LABEL
-#L21427
-#line 401	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 	if(KIE && KMSK4 && KIF)
-;  401:(      JZ_0,        KIE ,            ,   #L21573)
+#L21632
+#line 428	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 	if(KIE && KMSK4 && KIF)
+;  428:(      JZ_0,        KIE ,            ,   #L21778)
 
 ; ITemplate_JZ_0
 	JBS            	(_KIE_0)/8,	(_KIE_0)%8
-	GOTO           	#L21573
-;  401:(      JZ_0,      KMSK4 ,            ,   #L21573)
+	GOTO           	#L21778
+;  428:(      JZ_0,      KMSK4 ,            ,   #L21778)
 
 ; ITemplate_JZ_0
 	JBS            	(_KMSK4_0)/8,	(_KMSK4_0)%8
-	GOTO           	#L21573
-;  401:(      JZ_0,        KIF ,            ,   #L21573)
+	GOTO           	#L21778
+;  428:(      JZ_0,        KIF ,            ,   #L21778)
 
 ; ITemplate_JZ_0
 	JBS            	(_KIF_0)/8,	(_KIF_0)%8
-	GOTO           	#L21573
+	GOTO           	#L21778
 ;     {
-#line 403	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		KIF = 0;       //清除外部中断
-;  403:(    ASGN_0,          0 ,            ,       KIF)
+#line 430	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		KIF = 0;							//清除外部中断
+;  430:(    ASGN_0,          0 ,            ,       KIF)
 
 ; ITemplate_CLR_0_TMP
 	BCC            	(_KIF_0)/8,	(_KIF_0)%8
-#line 404	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 		if(IRQ)
-;  404:(      JZ_0,        PB3 ,            ,   #L21573)
+#line 431	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 		if(IRQ)
+;  431:(      JZ_0,        PB3 ,            ,   #L21778)
 
 ; ITemplate_JZ_0
 	JBS            	(_PB3_0)/8,	(_PB3_0)%8
-	GOTO           	#L21573
+	GOTO           	#L21778
 ; 		{
-#line 406	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; 			_hw2000b_irq_request = 1;
-;  406:(    ASGN_0,          1 ,            ,_hw2000b_irq_request)
+#line 433	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; 			hw2000b_irq_request = 1;
+;  433:(    ASGN_0,          1 ,            ,hw2000b_irq_request)
 
 ; ITemplate_SET_0_TMP
 	SECTION        	0x0
-	BSS            	((__hw2000b_irq_request)/8) & 0X7F,	(__hw2000b_irq_request)%8		; Bank 0
+	BSS            	((_hw2000b_irq_request)/8) & 0X7F,	(_hw2000b_irq_request)%8		; Bank 0
 ; 		}
 ;     }
-#line 410	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\main.c ; }
-;  410:(     LABEL,    #L21573 ,            ,          )
+#line 437	D:\项目工程\RF-NODC-V1.0-SOFT\src\main.c ; }
+;  437:(     LABEL,    #L21778 ,            ,          )
 
 ; ITemplate_LABEL
-#L21573
-;  410:(     RET_I,            ,            ,          )
+#L21778
+;  437:(     RET_I,            ,            ,          )
 
 ; ITemplate_RET_I
 	SECTION        	0x0
@@ -1198,103 +1425,115 @@ _INT_RESTORE
 SECTION0C__Program_Files__x86__HRCC_Tools_HRCC_v1_2_0_139_tools_INCLUDE_ES7P0693_h_STATIC4	UNINTIAL       		; Bank 0
 _#T0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC5	PSECT	FLAG=0X1088,ADDR=0X7FCA0
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC5	PSECT	FLAG=0X1088,ADDR=0X7FCA0
 _DATARDTRG_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC6	PSECT	FLAG=0X1088,ADDR=0X7FCA2
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC6	PSECT	FLAG=0X1088,ADDR=0X7FCA2
 _WREN_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC7	PSECT	FLAG=0X1088,ADDR=0X7FCA3
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC7	PSECT	FLAG=0X1088,ADDR=0X7FCA3
 _FPEE_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC8	PSECT	FLAG=0X1088,ADDR=0X7FCA7
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC8	PSECT	FLAG=0X1088,ADDR=0X7FCA7
 _DATARDEN_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC9	PSECT	FLAG=0X1088,ADDR=0X7FCB7
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC9	PSECT	FLAG=0X1088,ADDR=0X7FCB7
 _GIE_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC10	PSECT	FLAG=0X1088,ADDR=0X7FCC9
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC10	PSECT	FLAG=0X1088,ADDR=0X7FCC9
 _T8NIE_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC11	PSECT	FLAG=0X1088,ADDR=0X7FCCC
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC11	PSECT	FLAG=0X1088,ADDR=0X7FCCC
 _KIE_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC12	PSECT	FLAG=0X1088,ADDR=0X7FCD1
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC12	PSECT	FLAG=0X1088,ADDR=0X7FCD1
 _T8NIF_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC13	PSECT	FLAG=0X1088,ADDR=0X7FCD4
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC13	PSECT	FLAG=0X1088,ADDR=0X7FCD4
 _KIF_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC14	PSECT	FLAG=0X1088,ADDR=0X7FCD8
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC14	PSECT	FLAG=0X1088,ADDR=0X7FCD8
 _PIE0_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC15	PSECT	FLAG=0X1088,ADDR=0X7FCE0
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC15	PSECT	FLAG=0X1088,ADDR=0X7FCE0
 _PIF0_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC16	PSECT	FLAG=0X1088,ADDR=0X7FCE9
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC16	PSECT	FLAG=0X1088,ADDR=0X7FCE9
 _RX0IE_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC17	PSECT	FLAG=0X1088,ADDR=0X7FCF1
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC17	PSECT	FLAG=0X1088,ADDR=0X7FCF1
 _RX0IF_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC18	PSECT	FLAG=0X1088,ADDR=0X7FD1C
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC18	PSECT	FLAG=0X1088,ADDR=0X7FD1C
 _KMSK4_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC19	PSECT	FLAG=0X1088,ADDR=0X7FD4B
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC19	PSECT	FLAG=0X1088,ADDR=0X7FD4B
 _PB3_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC20	PSECT	FLAG=0X1088,ADDR=0X7FDF7
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC20	PSECT	FLAG=0X1088,ADDR=0X7FDF7
 _T8NEN_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC21	PSECT	FLAG=0X1088,ADDR=0X30684
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC21	PSECT	FLAG=0X1088,ADDR=0X30684
 _RX0TXEN_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC22	PSECT	FLAG=0X1088,ADDR=0X30686
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC22	PSECT	FLAG=0X1088,ADDR=0X30685
+_BJT0EN_0	RSEG           	0X1		; Bank 0
+
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC23	PSECT	FLAG=0X1088,ADDR=0X30686
 _RX0LEN_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC23	PSECT	FLAG=0X1088,ADDR=0X30687
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC24	PSECT	FLAG=0X1088,ADDR=0X30687
 _RX0EN_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC24	PSECT	FLAG=0X1088,ADDR=0X30695
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC25	PSECT	FLAG=0X1088,ADDR=0X30691
+_TRMT0_0	RSEG           	0X1		; Bank 0
+
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC26	PSECT	FLAG=0X1088,ADDR=0X30695
 _BRGH0_0	RSEG           	0X1		; Bank 0
 
-SECTION8D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC25	PSECT	FLAG=0X1088,ADDR=0X30696
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC27	PSECT	FLAG=0X1088,ADDR=0X30696
 _TX0LEN_0	RSEG           	0X1		; Bank 0
 
-SECTION0D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC26	PSECT	FLAG=0x88
-__hw2000b_irq_request	RSEG           	0X1		; Bank 0
+SECTION8D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC28	PSECT	FLAG=0X1088,ADDR=0X30697
+_TX0EN_0	RSEG           	0X1		; Bank 0
 
-SECTION0D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC27	PSECT	FLAG=0x88
+SECTION0D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC29	UNINTIAL       		; Bank 0
+__ack_count	RSEG           	0X2		; Bank 0
+
+SECTION0D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC30	PSECT	FLAG=0x88
+_hw2000b_irq_request	RSEG           	0X1		; Bank 0
+
+SECTION0D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC31	PSECT	FLAG=0x88
 _rx_ok	RSEG           	0X1		; Bank 0
 
-SECTION1ID__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c29	IDATA          		0X82		; Bank 0
+SECTION1ID__项目工程_RF_NODC_V1_0_SOFT_src_main_c33	IDATA          		0X82		; Bank 0
 _sleep_flag	DB             	0X0,0XE4		; Bank 0
 
-SECTION1ID__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c31	IDATA          		0X80		; Bank 0
+SECTION1ID__项目工程_RF_NODC_V1_0_SOFT_src_main_c35	IDATA          		0X80		; Bank 0
 _RX_OK_flag	DB             	0X0,0XE4		; Bank 0
 
-SECTION1ID__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c33	IDATA          		0X81		; Bank 0
+SECTION1ID__项目工程_RF_NODC_V1_0_SOFT_src_main_c37	IDATA          		0X81		; Bank 0
 _dataerr	DB             	0X0,0XE4		; Bank 0
 
-SECTION0D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC34	PSECT	FLAG=0x88
-_DataFlashErsPage_#T20401_63	RSEG           	0X1		; Bank 0
+SECTION0D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC38	PSECT	FLAG=0x88
+_DataFlashErsPage_#T20403_61	RSEG           	0X1		; Bank 0
 
-SECTION0D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC35	PSECT	FLAG=0x88
-_DataFlashRdData_#T20513_66	RSEG           	0X1		; Bank 0
+SECTION0D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC39	PSECT	FLAG=0x88
+_DataFlashRdData_#T20515_64	RSEG           	0X1		; Bank 0
 
-SECTION0D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC36	PSECT	FLAG=0x88
-_DataFlashWrData_#T20859_69	RSEG           	0X1		; Bank 0
+SECTION0D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC40	PSECT	FLAG=0x88
+_DataFlashWrData_#T20861_67	RSEG           	0X1		; Bank 0
 
-SECTION1D__毕业论文_ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016_src_main_c_STATIC	UNINTIAL       	0		; Bank 0
-	ORG            	0X9B		; Bank 0
-__ack_count	RSEG           	0X2		; Bank 0
-	ORG            	0XA3		; Bank 0
+SECTION1D__项目工程_RF_NODC_V1_0_SOFT_src_main_c_STATIC	UNINTIAL       	0		; Bank 0
+	ORG            	0XC3		; Bank 0
 _rxbuf	RSEG           	0X28		; Bank 0
-	ORG            	0X98		; Bank 0
+	ORG            	0XA5		; Bank 0
+_data_rf	RSEG           	0X1E		; Bank 0
+	ORG            	0X9C		; Bank 0
 _timer_cnt	RSEG           	0X1		; Bank 0
-	ORG            	0X95		; Bank 0
+	ORG            	0X99		; Bank 0
 _CallFlashEn	RSEG           	0X1		; Bank 0
-	ORG            	0X96		; Bank 0
+	ORG            	0X9A		; Bank 0
 _FlashEwEn	RSEG           	0X1		; Bank 0
 
 SECTION8C__Program_Files__x86__HRCC_Tools_HRCC_v1_2_0_139_tools_INCLUDE_ES7P0693_h_STATIC	UNINTIAL       	0		; Bank 0
@@ -1334,8 +1573,12 @@ _PWRC_0	RSEG           	0X1		; Bank 0
 _T8N_0	RSEG           	0X1		; Bank 0
 	ORG            	0XFFBE		; Bank 0
 _T8NC_0	RSEG           	0X1		; Bank 0
+	ORG            	0X60CD		; Bank 0
+_BR0FRA_0	RSEG           	0X1		; Bank 0
 	ORG            	0X60CF		; Bank 0
 _RX0B_0	RSEG           	0X1		; Bank 0
+	ORG            	0X60D1		; Bank 0
+_TX0B_0	RSEG           	0X1		; Bank 0
 	ORG            	0X60D3		; Bank 0
 _BR0R_0	RSEG           	0X1		; Bank 0
 	ORG            	0XFF8E		; Bank 0

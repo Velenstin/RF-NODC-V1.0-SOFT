@@ -62,29 +62,16 @@ _delay_ms
 ; * 修订历史：
 ; * 修订日期：
 ; **************************************************************************/
-; //void delay_ms(uint16_t ms)
-; //{
-;     //uint16_t i;
-; 	//T8N = 130;		//定时时间: (255-130)*8us = 1000us=1ms
-;     //T8NC = 0x8E;    //0x8D:预分频1:64 (32M/2/64)= 1/8M = 8us
-; 	//T8NIF = 0;
-; 	//T8NIE = 0;
-; 	//for (i = 0; i < ms; i++) {
-;         //while(!T8NIF);
-; 		//T8NIF = 0;
-; 		//T8N += 130;
-;     //}
-; //}
 ; void delay_ms(uint16_t ms)
 ; {
 ; 	uint16_t i;
-#line 46	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; 	for(;ms>0;ms--)
+#line 30	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; 	for(;ms>0;ms--)
 	CLR            	BKSR
-;   46:(     LABEL,    #L20275 ,            ,          )
+;   30:(     LABEL,    #L20275 ,            ,          )
 
 ; ITemplate_LABEL
 #L20275
-;   46:(      JZ_2,         ms ,            ,   #L20333)
+;   30:(      JZ_2,         ms ,            ,   #L20333)
 
 ; ITemplate_JZ1_4
 	SECTION        	0x1
@@ -93,64 +80,64 @@ _delay_ms
 	JBC            	PSW,	0x2
 	GOTO           	#L20333
 ; 	{
-#line 48	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; 		for(i = 0;i<500;i++);
-;   48:(    ASGN_2,          0 ,            ,         i)
+#line 32	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; 		for(i = 0;i<500;i++);
+;   32:(    ASGN_2,          0 ,            ,         i)
 
 ; ITemplate_CLR1_4_TMP
 	CLR            	(_delay_ms_i_2) & 0X7F		; Bank 1
 	CLR            	(_delay_ms_i_2+0x1) & 0X7F		; Bank 1
-;   48:(     LABEL,    #L20285 ,            ,          )
+;   32:(     LABEL,    #L20285 ,            ,          )
 
 ; ITemplate_LABEL
 #L20285
-;   48:(    JGE_2U,          i ,        500 ,   #L20277)
+;   32:(    JGE_2U,          i ,        500 ,   #L20277)
 
 ; ITemplate_JGE1_4U
 	MOVI           	0x1
 	SUB            	(_delay_ms_i_2+0x1) & 0X7F,	0x0		; Bank 1
 	JBS            	PSW,	0x2
-	GOTO           	#L20367
+	GOTO           	#L20393
 	MOVI           	0xf4
 	SUB            	(_delay_ms_i_2) & 0X7F,	0x0		; Bank 1
-#L20367
+#L20393
 	JBC            	PSW,	0x0
 	GOTO           	#L20277
-;   48:(     ADD_2,          i ,          1 ,         i)
+;   32:(     ADD_2,          i ,          1 ,         i)
 
 ; ITemplate_INC_2_TMP
 	INC            	(_delay_ms_i_2) & 0X7F		; Bank 1
 	JBS            	PSW,	0x2
-	GOTO           	#L20368
+	GOTO           	#L20394
 	INC            	(_delay_ms_i_2+0x1) & 0X7F		; Bank 1
-#L20368
-;   48:(       JMP,            ,            ,   #L20285)
+#L20394
+;   32:(       JMP,            ,            ,   #L20285)
 
 ; ITemplate_JMP
 	GOTO           	#L20285
-#line 49	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; 	}
-;   49:(     LABEL,    #L20277 ,            ,          )
+#line 33	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; 	}
+;   33:(     LABEL,    #L20277 ,            ,          )
 
 ; ITemplate_LABEL
 #L20277
-;   46:(     SUB_2,         ms ,          1 ,        ms)
+;   30:(     SUB_2,         ms ,          1 ,        ms)
 
 ; ITemplate_DEC_2_TMP
 	MOV            	(_delay_msDATA+0X0) & 0X7F,	0x0		; Bank 1
 	JBS            	PSW,	0x2
-	GOTO           	#L20369
+	GOTO           	#L20395
 	DEC            	(_delay_msDATA+0X0+0x1) & 0X7F		; Bank 1
-#L20369
+#L20395
 	DEC            	(_delay_msDATA+0X0) & 0X7F		; Bank 1
-;   49:(       JMP,            ,            ,   #L20275)
+;   33:(       JMP,            ,            ,   #L20275)
 
 ; ITemplate_JMP
 	GOTO           	#L20275
-#line 50	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; }
-;   50:(     LABEL,    #L20333 ,            ,          )
+#line 34	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; }
+;   34:(     LABEL,    #L20333 ,            ,          )
 
 ; ITemplate_LABEL
 #L20333
-;   50:(       RET,            ,            ,          )
+;   34:(       RET,            ,            ,          )
 
 ; ITemplate_RET
 	SECTION        	0x0
@@ -158,7 +145,7 @@ _delay_ms
 	_DESC          	delay_us,0X0,0X0
 
 SECTION1delay_us	UNINTIAL       	0		; Bank 0
-	ORG            	0X89		; Bank 0
+	ORG            	0X8D		; Bank 0
 _delay_usDATA	RSEG           	0X4		; Bank 0
 delay_us#	CSEG           
 _delay_us
@@ -176,54 +163,84 @@ _delay_us
 ; {
 ; 	uint16_t i;
 ; 	
-#line 66	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; 	for (i = 0; i < us; i++) {
+#line 50	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; 	for (; us>0; us--) 
 	CLR            	BKSR
-;   66:(    ASGN_2,          0 ,            ,         i)
-
-; ITemplate_CLR1_4_TMP
-	SECTION        	0x1
-	CLR            	(_delay_us_i_5) & 0X7F		; Bank 1
-	CLR            	(_delay_us_i_5+0x1) & 0X7F		; Bank 1
-;   66:(     LABEL,    #L20334 ,            ,          )
+;   50:(     LABEL,    #L20334 ,            ,          )
 
 ; ITemplate_LABEL
 #L20334
-;   66:(    JGE_2U,          i ,         us ,   #L20366)
+;   50:(      JZ_2,         us ,            ,   #L20392)
+
+; ITemplate_JZ1_4
+	SECTION        	0x1
+	MOV            	(_delay_usDATA+0X0) & 0X7F,	0x0		; Bank 1
+	IOR            	(_delay_usDATA+0X0+0x1) & 0X7F,	0x0		; Bank 1
+	JBC            	PSW,	0x2
+	GOTO           	#L20392
+; 	{
+#line 52	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; 		for(i = 0;i<20;i++);
+;   52:(    ASGN_2,          0 ,            ,         i)
+
+; ITemplate_CLR1_4_TMP
+	CLR            	(_delay_us_i_5) & 0X7F		; Bank 1
+	CLR            	(_delay_us_i_5+0x1) & 0X7F		; Bank 1
+;   52:(     LABEL,    #L20344 ,            ,          )
+
+; ITemplate_LABEL
+#L20344
+;   52:(    JGE_2U,          i ,         20 ,   #L20336)
 
 ; ITemplate_JGE1_4U
-	MOV            	(_delay_usDATA+0X0+0x1) & 0X7F,	0x0		; Bank 1
+	MOVI           	0x0
 	SUB            	(_delay_us_i_5+0x1) & 0X7F,	0x0		; Bank 1
 	JBS            	PSW,	0x2
-	GOTO           	#L20370
-	MOV            	(_delay_usDATA+0X0) & 0X7F,	0x0		; Bank 1
+	GOTO           	#L20396
+	MOVI           	0x14
 	SUB            	(_delay_us_i_5) & 0X7F,	0x0		; Bank 1
-#L20370
+#L20396
 	JBC            	PSW,	0x0
-	GOTO           	#L20366
-;   66:(     ADD_2,          i ,          1 ,         i)
+	GOTO           	#L20336
+;   52:(     ADD_2,          i ,          1 ,         i)
 
 ; ITemplate_INC_2_TMP
 	INC            	(_delay_us_i_5) & 0X7F		; Bank 1
 	JBS            	PSW,	0x2
-	GOTO           	#L20371
+	GOTO           	#L20397
 	INC            	(_delay_us_i_5+0x1) & 0X7F		; Bank 1
-#L20371
-#line 67	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; 	}
-;   67:(       JMP,            ,            ,   #L20334)
+#L20397
+;   52:(       JMP,            ,            ,   #L20344)
+
+; ITemplate_JMP
+	GOTO           	#L20344
+#line 53	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; 	}
+;   53:(     LABEL,    #L20336 ,            ,          )
+
+; ITemplate_LABEL
+#L20336
+;   50:(     SUB_2,         us ,          1 ,        us)
+
+; ITemplate_DEC_2_TMP
+	MOV            	(_delay_usDATA+0X0) & 0X7F,	0x0		; Bank 1
+	JBS            	PSW,	0x2
+	GOTO           	#L20398
+	DEC            	(_delay_usDATA+0X0+0x1) & 0X7F		; Bank 1
+#L20398
+	DEC            	(_delay_usDATA+0X0) & 0X7F		; Bank 1
+;   53:(       JMP,            ,            ,   #L20334)
 
 ; ITemplate_JMP
 	GOTO           	#L20334
-#line 68	D:\毕业论文\ES_DEV_ES7W8020_SDK_ZJ_NODC_FB_V3_20231016\src\timer.c ; }
-;   68:(     LABEL,    #L20366 ,            ,          )
+#line 54	D:\项目工程\RF-NODC-V1.0-SOFT\src\timer.c ; }
+;   54:(     LABEL,    #L20392 ,            ,          )
 
 ; ITemplate_LABEL
-#L20366
-;   68:(       RET,            ,            ,          )
+#L20392
+;   54:(       RET,            ,            ,          )
 
 ; ITemplate_RET
 	SECTION        	0x0
 	RET            			; Bank 0		; ShBank 0
 
-SECTION0C__Program_Files__x86__HRCC_Tools_HRCC_v1_2_0_139_tools_INCLUDE_ES7P0693_h_STATIC54	UNINTIAL       		; Bank 0
+SECTION0C__Program_Files__x86__HRCC_Tools_HRCC_v1_2_0_139_tools_INCLUDE_ES7P0693_h_STATIC58	UNINTIAL       		; Bank 0
 _#T0	RSEG           	0X1		; Bank 0
 	END

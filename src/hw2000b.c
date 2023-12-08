@@ -17,8 +17,6 @@
 			hw2000b_tx_data
 			hw2000b_rx_enable
 			hw2000b_rx_data
-			hw2000b_power_down
-			hw2000b_power_on
 * 文件作者：Ljj  
 * 文件版本： 
 * 完成日期：2023-08-23	
@@ -35,9 +33,11 @@ const uint16_t agcTab[18] = {0x0000, 0x0000, 0x0000, 0x0001, 0x0002, 0x000A,
                              0x0012, 0x0212, 0x0412, 0x064A, 0x084A, 0x0A4A,
                              0x0A52, 0x0A92, 0x0C92, 0x0CD2, 0x0CDA, 0x0CE3
 };
-extern	sbit		_hw2000b_irq_request;
+extern	sbit		hw2000b_irq_request;
 
-extern	uint16_t	_ack_count;
+extern uint16_t	_ack_count;
+
+extern uint8_t	RX_OK_flag;
 
 //uint16_t reg_value1;
 
@@ -426,36 +426,40 @@ void hw2000b_cancel_sw(void)
 void hw2000b_tx_data(uint8_t *buf, uint16_t size)
 {
 	uint16_t reg;
-	_hw2000b_irq_request = 0;
-	
-    hw2000b_write_reg(0x21, 0x0100);	//TX enable
-    delay_us(5);						//delete if lower spi rate,
-	hw2000b_write_reg(0x3B, 0x8000);	//clear TX FIFO
-    hw2000b_write_fifo(0x32, buf, size);//write FIFO
-	reg = hw2000b_read_reg(0x36);
-	hw2000b_write_reg(0x36, 0x0081|reg);//FIFO0 occupy
-    hw2000b_write_reg(0x37, 0x0000);	//FIFO1 disable
 
-	while (!_hw2000b_irq_request);
+	hw2000b_irq_request = 0;
 	
+    hw2000b_write_reg(0x21, 0x0100);					//TX enable
+    delay_us(5);
+	hw2000b_write_reg(0x3B, 0x8000);					//clear TX FIFO
+    hw2000b_write_fifo(0x32, buf, size);				//write FIFO
 	reg = hw2000b_read_reg(0x36);
-    if ((reg & 0x8000) == 0x8000)		//rtx fail
+	hw2000b_write_reg(0x36, 0x0081|reg);				//FIFO0 occupy
+    hw2000b_write_reg(0x37, 0x0000);					//FIFO1 disable
+
+	while ((!hw2000b_irq_request) && (!RX_OK_flag))
 	{
-		//_ack_count--;					//添加重发超时处理代码
+		CLRWDT();										//清看门狗
+		delay_us(5);
 	}
-	else
-	{	//ack mode:recieve ack    no ack mode:tx success
-		if((hw2000b_read_reg(0x3C) & 0x000F) != 0)	//recieve ack
-			{_ack_count++;}
-		else
-			{_ack_count = 0;}
-	}
-    hw2000b_write_reg(0x36, 0x0080);	//FIFO0 no occupy
-	hw2000b_write_reg(0x3D, 0x0008);	//clear int0
-	hw2000b_write_reg(0x21, 0x0000);	//TX disable
-	//hw2000b_write_reg(0x23, 0x431B); //Soft reset			//会增加功耗
-	//hw2000b_write_reg(0x23, 0x031B); 
-	//delay_us(20);//delete if lower spi rate,
+
+	
+	//reg = hw2000b_read_reg(0x36);
+    //if ((reg & 0x8000) == 0x8000)		//rtx fail
+	//{;}
+	//else
+	//{
+		//if((hw2000b_read_reg(0x3C) & 0x000F) != 0)	//recieve ack
+			//{;}
+		//else
+			//{;}
+	//}
+
+    hw2000b_write_reg(0x36, 0x0080);					//FIFO0 no occupy
+	hw2000b_write_reg(0x3D, 0x0008);					//clear int0
+	hw2000b_write_reg(0x21, 0x0000);					//TX/RX disable
+	hw2000b_write_reg(0x23, 0x431B);					//复位RF状态
+	hw2000b_write_reg(0x23, 0x031B);
 }
 
 /**************************************************************************
@@ -491,8 +495,8 @@ int8_t hw2000b_rx_data(uint8_t *data)
 {
 	uint16_t reg;
 
-	if(_hw2000b_irq_request){
-		_hw2000b_irq_request = 0;
+	if(hw2000b_irq_request){
+		hw2000b_irq_request = 0;
 
 		reg = hw2000b_read_reg(0x36);
 		if ((reg & 0x2000) == 0){	//crc校验成功
@@ -511,47 +515,4 @@ int8_t hw2000b_rx_data(uint8_t *data)
 	}
 }
 
-/**************************************************************************
-* 函数名称：hw2000b_power_down
-* 功能描述：hw2000b进入power down
-* 输入参数：无
-* 返回参数：无
-* 函数作者：
-* 完成日期：
-* 修订历史：
-* 修订日期：
-**************************************************************************/
-void hw2000b_power_down(void)
-{
-	uint16_t reg_value;
-	
-	hw2000b_write_reg(0x21, 0x0000); // TX RX disable
-	reg_value = hw2000b_read_reg(0x23);
-	hw2000b_write_reg(0x23, 0x8080 | reg_value);	//0x23寄存器第【15】位置1
 
-}
-
-/**************************************************************************
-* 函数名称：hw2000b_power_on
-* 功能描述：hw2000b从power down唤醒
-* 输入参数：无
-* 返回参数：无
-* 函数作者：
-* 完成日期：
-* 修订历史：
-* 修订日期：
-**************************************************************************/
-void hw2000b_power_on(void)
-{
-	uint16_t reg_value;
-	
-	reg_value = hw2000b_read_reg(0x23);
-	hw2000b_write_reg(0x23, 0x7F7F & reg_value);	//0x23寄存器第【15】位置0
-
-	delay_ms(1);
-
-	hw2000b_write_reg(0x23, 0x431B); //Soft reset			//会增加功耗
-	hw2000b_write_reg(0x23, 0x031B); 	
-	delay_us(20);
-	hw2000b_init_250k();
-}

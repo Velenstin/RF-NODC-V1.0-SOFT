@@ -42,7 +42,7 @@ void spi_init(void)
 	SPIRST = 1;			//复位SPI
     while(SPIRST);
     SPICON0 = 0xF0;     //CKS = Fosc/4 = 32/8 = 4MHz，清空发送器、接收器，字节读写 0xF0:Fosc/16 0xE0:Fosc/8 0xD0:Fosc/4 0xC0:Fosc/2
-    SPICON1 = 0x00;      //0:上升沿发送（先），下降沿接收（后）；
+    SPICON1 = 0x00;     //0:上升沿发送（先），下降沿接收（后）；
     MS = 0;				//0：主机模式，1：从机模式
     RBIE = 0;			//关闭接收中断	
     SPIEN = 1;			//SPI使能
